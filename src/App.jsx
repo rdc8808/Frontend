@@ -331,34 +331,7 @@ const SocialPlanner = () => {
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="font-semibold text-center text-sm py-3 border-r border-b bg-gray-50">{day}</div>
                 ))}
-                {(() => {
-                  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedMonth);
-                  const days = [];
-                  for (let i = 0; i < startingDayOfWeek; i++) {
-                    days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50 border-r border-b"></div>);
-                  }
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const dayPosts = posts.filter(post => post.scheduleDate === dateStr);
-                    const isToday = dateStr === new Date().toISOString().split('T')[0];
-                    days.push(
-                      <div key={day} className={`h-24 border-r border-b p-2 hover:bg-gray-50 ${isToday ? 'bg-teal-50' : ''}`}>
-                        <div className={`font-semibold text-sm mb-1 ${isToday ? 'text-teal-600' : ''}`}>{day}</div>
-                        <div className="space-y-1">
-                          {dayPosts.map(post => (
-                            <div key={post.id} className="text-xs bg-teal-500 text-white rounded px-2 py-1 truncate cursor-pointer" onClick={() => {
-                              setCurrentPost(post);
-                              setShowComposer(true);
-                            }}>
-                              {post.scheduleTime}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return days;
-                })()}
+                {renderCalendar()}
               </div>
             </div>
           </div>

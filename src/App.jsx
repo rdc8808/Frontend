@@ -134,6 +134,51 @@ const SocialPlanner = () => {
     published: posts.filter(p => p.status === 'published').length
   };
 
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const renderCalendar = () => {
+    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedMonth);
+    const days = [];
+    
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50 border-r border-b last:border-r-0"></div>);
+    }
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayPosts = posts.filter(post => post.scheduleDate === dateStr);
+      const isToday = dateStr === new Date().toISOString().split('T')[0];
+      
+      days.push(
+        <div key={`day-${day}`} className={`h-24 border-r border-b last:border-r-0 p-2 hover:bg-gray-50 ${isToday ? 'bg-teal-50' : 'bg-white'}`}>
+          <div className={`font-semibold text-sm mb-1 ${isToday ? 'text-teal-600' : 'text-gray-700'}`}>{day}</div>
+          {dayPosts.length > 0 && (
+            <div className="space-y-1">
+              {dayPosts.map(post => (
+                <div key={post.id} className="text-xs bg-teal-500 text-white rounded px-2 py-1 truncate cursor-pointer hover:bg-teal-600" onClick={() => {
+                  setCurrentPost(post);
+                  setShowComposer(true);
+                }}>
+                  {post.scheduleTime}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return days;
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen">
@@ -310,7 +355,7 @@ const SocialPlanner = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">Calendar</h1>
             <p className="text-gray-600 mb-8">View and manage your scheduled posts</p>
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6 border">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">{selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
                 <div className="flex gap-2">
@@ -327,11 +372,15 @@ const SocialPlanner = () => {
                   }} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">→</button>
                 </div>
               </div>
-              <div className="grid grid-cols-7 gap-0 border-t border-l rounded-lg overflow-hidden">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="font-semibold text-center text-sm py-3 border-r border-b bg-gray-50">{day}</div>
-                ))}
-                {renderCalendar()}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="grid grid-cols-7 bg-gray-50 border-b">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="font-semibold text-center text-sm py-3 border-r last:border-r-0">{day}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7">
+                  {renderCalendar()}
+                </div>
               </div>
             </div>
           </div>

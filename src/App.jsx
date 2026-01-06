@@ -306,10 +306,77 @@ const SocialPlanner = () => {
           </div>
         )}
 
+        {currentPage === 'calendar' && (
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Calendar</h1>
+            <p className="text-gray-600 mb-8">View and manage your scheduled posts</p>
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">{selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => {
+                    const newDate = new Date(selectedMonth);
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    setSelectedMonth(newDate);
+                  }} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">←</button>
+                  <button onClick={() => setSelectedMonth(new Date())} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">Today</button>
+                  <button onClick={() => {
+                    const newDate = new Date(selectedMonth);
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    setSelectedMonth(newDate);
+                  }} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">→</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-0 border-t border-l rounded-lg overflow-hidden">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="font-semibold text-center text-sm py-3 border-r border-b bg-gray-50">{day}</div>
+                ))}
+                {(() => {
+                  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(selectedMonth);
+                  const days = [];
+                  for (let i = 0; i < startingDayOfWeek; i++) {
+                    days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50 border-r border-b"></div>);
+                  }
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayPosts = posts.filter(post => post.scheduleDate === dateStr);
+                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    days.push(
+                      <div key={day} className={`h-24 border-r border-b p-2 hover:bg-gray-50 ${isToday ? 'bg-teal-50' : ''}`}>
+                        <div className={`font-semibold text-sm mb-1 ${isToday ? 'text-teal-600' : ''}`}>{day}</div>
+                        <div className="space-y-1">
+                          {dayPosts.map(post => (
+                            <div key={post.id} className="text-xs bg-teal-500 text-white rounded px-2 py-1 truncate cursor-pointer" onClick={() => {
+                              setCurrentPost(post);
+                              setShowComposer(true);
+                            }}>
+                              {post.scheduleTime}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return days;
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {currentPage === 'connections' && (
           <div className="max-w-4xl">
             <h1 className="text-3xl font-bold mb-2">Connections</h1>
-            <p className="text-gray-600 mb-8">Connect your social media accounts</p>
+            <p className="text-gray-600 mb-8">Connect your social media accounts to start scheduling posts</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs">i</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-1">OAuth Setup Required</h3>
+                <p className="text-blue-800 text-sm">To enable real Facebook and LinkedIn connections, you'll need to configure OAuth credentials. The demo mode simulates connected accounts for testing purposes.</p>
+              </div>
+            </div>
             <div className="grid gap-6">
               <div className="bg-white rounded-lg p-6 border">
                 <div className="flex items-start justify-between">
@@ -319,11 +386,11 @@ const SocialPlanner = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Facebook</h3>
-                      <p className="text-sm text-gray-600">Connect your Facebook page</p>
+                      <p className="text-sm text-gray-600">Connect your Facebook page to schedule posts</p>
                     </div>
                   </div>
-                  <button onClick={() => connectAccount('facebook')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.facebook ? 'bg-blue-50 text-blue-600 border' : 'bg-blue-600 text-white'}`}>
-                    {connectedAccounts.facebook ? '✓ Connected' : 'Connect'}
+                  <button onClick={() => connectAccount('facebook')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.facebook ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-blue-600 text-white'}`}>
+                    {connectedAccounts.facebook ? '✓ Connected' : 'Connect Facebook'}
                   </button>
                 </div>
               </div>
@@ -335,12 +402,75 @@ const SocialPlanner = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">LinkedIn</h3>
-                      <p className="text-sm text-gray-600">Connect your LinkedIn profile</p>
+                      <p className="text-sm text-gray-600">Connect your LinkedIn profile to share updates</p>
                     </div>
                   </div>
-                  <button onClick={() => connectAccount('linkedin')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.linkedin ? 'bg-blue-50 text-blue-700 border' : 'bg-blue-700 text-white'}`}>
-                    {connectedAccounts.linkedin ? '✓ Connected' : 'Connect'}
+                  <button onClick={() => connectAccount('linkedin')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.linkedin ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-blue-700 text-white'}`}>
+                    {connectedAccounts.linkedin ? '✓ Connected' : 'Connect LinkedIn'}
                   </button>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 bg-white rounded-lg p-6 border">
+              <h3 className="font-semibold mb-3">How OAuth Works</h3>
+              <ol className="space-y-2 text-sm text-gray-600">
+                <li>1. Click "Connect" on the platform you want to add</li>
+                <li>2. You'll be redirected to the platform's login page</li>
+                <li>3. Grant permission for the app to post on your behalf</li>
+                <li>4. You'll be redirected back and can start scheduling posts</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {currentPage === 'settings' && (
+          <div className="max-w-3xl">
+            <h1 className="text-3xl font-bold mb-2">Settings</h1>
+            <p className="text-gray-600 mb-8">Manage your account preferences</p>
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Profile</h3>
+                    <p className="text-sm text-gray-600">Your account information</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Email</label>
+                    <input type="email" value={currentUser?.email} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-600" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Display Name</label>
+                    <input type="text" defaultValue={currentUser?.fullName} placeholder="Enter your name" className="w-full px-4 py-2 border rounded-lg" />
+                  </div>
+                  <button className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">Save Changes</button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Security</h3>
+                    <p className="text-sm text-gray-600">Protect your account</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Password</label>
+                  <div className="flex gap-3">
+                    <input type="password" value="••••••••" disabled className="flex-1 px-4 py-2 border rounded-lg bg-gray-50" />
+                    <button className="px-6 py-2 border rounded-lg hover:bg-gray-50">Change</button>
+                  </div>
                 </div>
               </div>
             </div>

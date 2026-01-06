@@ -539,6 +539,7 @@ const SocialPlanner = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-3">Schedule</label>
+                <p className="text-xs text-gray-500 mb-2">All times are in Lima, Peru timezone (UTC-5)</p>
                 <div className="grid grid-cols-2 gap-4">
                   <input type="date" value={currentPost.scheduleDate} onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})} className="border rounded-lg p-3" />
                   <input type="time" value={currentPost.scheduleTime} onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})} className="border rounded-lg p-3" />

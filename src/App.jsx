@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import { Calendar, Facebook, Linkedin, Instagram, Send, Edit2, Trash2, Plus } from 'lucide-react';
+import { Calendar, Facebook, Linkedin, Instagram, Send, Edit2, Trash2, Plus, Settings, LogOut, User, BarChart3, Clock } from 'lucide-react';
 
 const API_URL = 'https://social-planner-api.onrender.com';
-const USER_ID = 'default_user'; // In production, this would be the logged-in user
+const USER_ID = 'default_user';
 
 const SocialPlanner = () => {
-  const [view, setView] = useState('calendar');
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [posts, setPosts] = useState([]);
   const [connectedAccounts, setConnectedAccounts] = useState({
     facebook: false,
@@ -25,10 +24,23 @@ const SocialPlanner = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
 
-  // Load connection status from backend
   useEffect(() => {
     checkConnections();
     loadPosts();
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const error = urlParams.get('error');
+    
+    if (connected) {
+      alert(`${connected} connected successfully!`);
+      checkConnections();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (error) {
+      alert(`Connection failed: ${error}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const checkConnections = async () => {
@@ -48,7 +60,6 @@ const SocialPlanner = () => {
       setPosts(data);
     } catch (error) {
       console.error('Error loading posts:', error);
-      // Fallback to localStorage
       const savedPosts = localStorage.getItem('social_posts');
       if (savedPosts) {
         setPosts(JSON.parse(savedPosts));
@@ -82,10 +93,7 @@ const SocialPlanner = () => {
       const response = await fetch(`${API_URL}/api/schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: USER_ID,
-          postData: currentPost
-        })
+        body: JSON.stringify({ userId: USER_ID, postData: currentPost })
       });
 
       if (response.ok) {
@@ -93,24 +101,9 @@ const SocialPlanner = () => {
         await loadPosts();
         setShowComposer(false);
         resetComposer();
-      } else {
-        throw new Error('Failed to schedule post');
       }
     } catch (error) {
-      console.error('Error scheduling post:', error);
-      alert('Error scheduling post. Saving locally instead.');
-      // Fallback to localStorage
-      const newPost = {
-        id: Date.now(),
-        ...currentPost,
-        status: 'scheduled',
-        createdAt: new Date().toISOString()
-      };
-      const updatedPosts = [...posts, newPost];
-      setPosts(updatedPosts);
-      localStorage.setItem('social_posts', JSON.stringify(updatedPosts));
-      setShowComposer(false);
-      resetComposer();
+      alert('Error scheduling post');
     } finally {
       setLoading(false);
     }
@@ -127,25 +120,17 @@ const SocialPlanner = () => {
       const response = await fetch(`${API_URL}/api/post-now`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: USER_ID,
-          postData: currentPost
-        })
+        body: JSON.stringify({ userId: USER_ID, postData: currentPost })
       });
 
       if (response.ok) {
-        const result = await response.json();
         alert('Post published successfully!');
         await loadPosts();
         setShowComposer(false);
         resetComposer();
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to post');
       }
     } catch (error) {
-      console.error('Error posting:', error);
-      alert(`Error: ${error.message}`);
+      alert('Error posting');
     } finally {
       setLoading(false);
     }
@@ -164,26 +149,14 @@ const SocialPlanner = () => {
 
   const deletePost = async (postId) => {
     try {
-      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        await loadPosts();
-      } else {
-        throw new Error('Failed to delete');
-      }
+      await fetch(`${API_URL}/api/posts/${postId}`, { method: 'DELETE' });
+      await loadPosts();
     } catch (error) {
       console.error('Error deleting post:', error);
-      // Fallback to localStorage
-      const updatedPosts = posts.filter(p => p.id !== postId);
-      setPosts(updatedPosts);
-      localStorage.setItem('social_posts', JSON.stringify(updatedPosts));
     }
   };
 
   const connectAccount = (platform) => {
-    // Redirect to backend OAuth flow
     window.location.href = `${API_URL}/auth/${platform}?userId=${USER_ID}`;
   };
 
@@ -194,15 +167,18 @@ const SocialPlanner = () => {
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-    
     return { daysInMonth, startingDayOfWeek, year, month };
   };
 
   const getPostsForDate = (date) => {
-    return posts.filter(post => {
-      if (!post.scheduleDate) return false;
-      return post.scheduleDate === date;
-    });
+    return posts.filter(post => post.scheduleDate === date);
+  };
+
+  const stats = {
+    total: posts.length,
+    scheduled: posts.filter(p => p.status === 'scheduled').length,
+    published: posts.filter(p => p.status === 'published').length,
+    drafts: 0
   };
 
   const CalendarView = () => {
@@ -216,21 +192,22 @@ const SocialPlanner = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayPosts = getPostsForDate(dateStr);
+      const isToday = dateStr === new Date().toISOString().split('T')[0];
       
       days.push(
-        <div key={day} className="h-24 border border-gray-200 p-2 hover:bg-gray-50">
-          <div className="font-semibold text-sm mb-1">{day}</div>
+        <div key={day} className={`h-24 border border-gray-200 p-2 hover:bg-gray-50 ${isToday ? 'bg-teal-50' : ''}`}>
+          <div className={`font-semibold text-sm mb-1 ${isToday ? 'text-teal-600' : ''}`}>{day}</div>
           <div className="space-y-1">
             {dayPosts.map(post => (
               <div 
                 key={post.id} 
-                className="text-xs bg-blue-100 rounded px-2 py-1 truncate cursor-pointer hover:bg-blue-200" 
+                className="text-xs bg-teal-500 text-white rounded px-2 py-1 truncate cursor-pointer" 
                 onClick={() => {
                   setCurrentPost(post);
                   setShowComposer(true);
                 }}
               >
-                {post.scheduleTime} - {post.caption.slice(0, 20)}...
+                {post.scheduleTime}
               </div>
             ))}
           </div>
@@ -239,43 +216,28 @@ const SocialPlanner = () => {
     }
     
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl font-semibold">
             {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
           <div className="flex gap-2">
-            <button 
-              onClick={() => {
-                const newDate = new Date(selectedMonth);
-                newDate.setMonth(newDate.getMonth() - 1);
-                setSelectedMonth(newDate);
-              }} 
-              className="px-4 py-2 border rounded hover:bg-gray-100"
-            >
-              Previous
-            </button>
-            <button 
-              onClick={() => setSelectedMonth(new Date())} 
-              className="px-4 py-2 border rounded hover:bg-gray-100"
-            >
-              Today
-            </button>
-            <button 
-              onClick={() => {
-                const newDate = new Date(selectedMonth);
-                newDate.setMonth(newDate.getMonth() + 1);
-                setSelectedMonth(newDate);
-              }} 
-              className="px-4 py-2 border rounded hover:bg-gray-100"
-            >
-              Next
-            </button>
+            <button onClick={() => {
+              const newDate = new Date(selectedMonth);
+              newDate.setMonth(newDate.getMonth() - 1);
+              setSelectedMonth(newDate);
+            }} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">←</button>
+            <button onClick={() => setSelectedMonth(new Date())} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">Today</button>
+            <button onClick={() => {
+              const newDate = new Date(selectedMonth);
+              newDate.setMonth(newDate.getMonth() + 1);
+              setSelectedMonth(newDate);
+            }} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">→</button>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-0 border-t border-l">
+        <div className="grid grid-cols-7 gap-0 border-t border-l rounded-lg overflow-hidden">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="font-bold text-center py-2 border-r border-b bg-gray-100">{day}</div>
+            <div key={day} className="font-semibold text-center text-sm py-3 border-r border-b bg-gray-50">{day}</div>
           ))}
           {days}
         </div>
@@ -283,192 +245,228 @@ const SocialPlanner = () => {
     );
   };
 
-  const ListView = () => {
-    return (
-      <div className="bg-white rounded-lg shadow">
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <div className="w-64 bg-white border-r flex flex-col">
         <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold">All Posts</h2>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">SocialScheduler</div>
+              <div className="text-xs text-gray-500">Rubicon Core</div>
+            </div>
+          </div>
         </div>
-        <div className="divide-y">
-          {posts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No posts yet. Create your first post!</div>
-          ) : (
-            posts.map(post => (
-              <div key={post.id} className="p-6 hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {post.platforms.facebook && <Facebook className="w-4 h-4 text-blue-600" />}
-                      {post.platforms.linkedin && <Linkedin className="w-4 h-4 text-blue-700" />}
-                      {post.platforms.instagram && <Instagram className="w-4 h-4 text-pink-600" />}
-                      <span className={`text-xs px-2 py-1 rounded ${post.status === 'published' ? 'bg-green-100 text-green-800' : post.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {post.status}
-                      </span>
-                    </div>
-                    <p className="text-gray-800 mb-2">{post.caption}</p>
-                    {post.media && (
-                      <div className="mb-2">
-                        {post.mediaType === 'image' ? (
-                          <img src={post.media} alt="Post media" className="w-32 h-32 object-cover rounded" />
-                        ) : (
-                          <video src={post.media} className="w-32 h-32 object-cover rounded" />
-                        )}
-                      </div>
-                    )}
-                    <div className="text-sm text-gray-500">
-                      {post.scheduleDate && post.scheduleTime && `Scheduled for ${post.scheduleDate} at ${post.scheduleTime}`}
-                      {post.publishedAt && ` - Published on ${new Date(post.publishedAt).toLocaleString()}`}
-                      {post.error && <div className="text-red-600 mt-1">Error: {post.error}</div>}
-                    </div>
+
+        <div className="p-4">
+          <button onClick={() => setShowComposer(true)} className="w-full bg-teal-500 text-white px-4 py-3 rounded-lg hover:bg-teal-600 flex items-center justify-center gap-2 font-medium">
+            <Plus className="w-5 h-5" />
+            Create Post
+          </button>
+        </div>
+
+        <nav className="flex-1 px-3">
+          <button onClick={() => setCurrentPage('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 ${currentPage === 'dashboard' ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <BarChart3 className="w-5 h-5" />
+            Dashboard
+          </button>
+          <button onClick={() => setCurrentPage('calendar')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 ${currentPage === 'calendar' ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <Calendar className="w-5 h-5" />
+            Calendar
+          </button>
+          <button onClick={() => setCurrentPage('connections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 ${currentPage === 'connections' ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            Connections
+          </button>
+          <button onClick={() => setCurrentPage('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 ${currentPage === 'settings' ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <Settings className="w-5 h-5" />
+            Settings
+          </button>
+        </nav>
+
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-teal-600">T</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-700 truncate">test2@test.com</div>
+            </div>
+            <button className="text-gray-400 hover:text-gray-600">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        {currentPage === 'dashboard' && (
+          <div className="p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+              <p className="text-gray-600">Welcome back! Here's an overview of your scheduled content.</p>
+            </div>
+
+            <div className="grid grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-teal-600" />
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => {
-                        setCurrentPost(post);
-                        setShowComposer(true);
-                      }} 
-                      className="p-2 hover:bg-gray-200 rounded"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => deletePost(post.id)} 
-                      className="p-2 hover:bg-red-100 rounded text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div>
+                    <div className="text-sm text-gray-500">Total Posts</div>
+                    <div className="text-2xl font-bold">{stats.total}</div>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Scheduled</div>
+                    <div className="text-2xl font-bold">{stats.scheduled}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Send className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Published</div>
+                    <div className="text-2xl font-bold">{stats.published}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Edit2 className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Drafts</div>
+                    <div className="text-2xl font-bold">{stats.drafts}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-  // Check for OAuth callback
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const connected = urlParams.get('connected');
-    const error = urlParams.get('error');
-    
-    if (connected) {
-      alert(`${connected} connected successfully!`);
-      checkConnections();
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    if (error) {
-      alert(`Connection failed: ${error}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Social Media Planner</h1>
-            <button 
-              onClick={() => setShowComposer(true)} 
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-semibold"
-            >
-              <Plus className="w-5 h-5" />
-              New Post
-            </button>
+            <div className="bg-white rounded-lg p-8 text-center">
+              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No scheduled posts yet</h3>
+              <p className="text-gray-600 mb-4">Create your first post to get started</p>
+              <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 inline-flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Create Post
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="mb-6 bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold mb-4">Connected Accounts</h3>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => connectAccount('facebook')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 ${connectedAccounts.facebook ? 'border-blue-600 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
-            >
-              <Facebook className="w-5 h-5" />
-              Facebook {connectedAccounts.facebook && '✓'}
-            </button>
-            <button 
-              onClick={() => connectAccount('linkedin')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 ${connectedAccounts.linkedin ? 'border-blue-700 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
-            >
-              <Linkedin className="w-5 h-5" />
-              LinkedIn {connectedAccounts.linkedin && '✓'}
-            </button>
-            <button 
-              onClick={() => connectAccount('instagram')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 ${connectedAccounts.instagram ? 'border-pink-600 bg-pink-50' : 'border-gray-300 hover:border-gray-400'}`}
-              disabled
-              title="Instagram coming soon"
-            >
-              <Instagram className="w-5 h-5" />
-              Instagram {connectedAccounts.instagram && '✓'}
-            </button>
+        {currentPage === 'calendar' && (
+          <div className="p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">Calendar</h1>
+              <p className="text-gray-600">View and manage your scheduled posts</p>
+            </div>
+            <CalendarView />
           </div>
-        </div>
+        )}
 
-        <div className="mb-6 flex gap-4">
-          <button 
-            onClick={() => setView('calendar')} 
-            className={`px-6 py-2 rounded-lg font-semibold ${view === 'calendar' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-          >
-            <Calendar className="w-5 h-5 inline mr-2" />
-            Calendar
-          </button>
-          <button 
-            onClick={() => setView('list')} 
-            className={`px-6 py-2 rounded-lg font-semibold ${view === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-          >
-            List View
-          </button>
-        </div>
+        {currentPage === 'connections' && (
+          <div className="p-8 max-w-4xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">Connections</h1>
+              <p className="text-gray-600">Connect your social media accounts to start scheduling posts</p>
+            </div>
 
-        {view === 'calendar' ? <CalendarView /> : <ListView />}
+            <div className="grid gap-6">
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Facebook className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Facebook</h3>
+                      <p className="text-sm text-gray-600">Connect your Facebook page to schedule posts</p>
+                    </div>
+                  </div>
+                  <button onClick={() => connectAccount('facebook')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.facebook ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                    {connectedAccounts.facebook ? '✓ Connected' : 'Connect'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-6 border">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Linkedin className="w-6 h-6 text-blue-700" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">LinkedIn</h3>
+                      <p className="text-sm text-gray-600">Connect your LinkedIn profile to share updates</p>
+                    </div>
+                  </div>
+                  <button onClick={() => connectAccount('linkedin')} className={`px-6 py-2 rounded-lg font-medium ${connectedAccounts.linkedin ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-blue-700 text-white hover:bg-blue-800'}`}>
+                    {connectedAccounts.linkedin ? '✓ Connected' : 'Connect'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentPage === 'settings' && (
+          <div className="p-8 max-w-3xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">Settings</h1>
+              <p className="text-gray-600">Manage your account preferences</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-6 border">
+              <h3 className="font-semibold mb-4">Profile</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <input type="email" value="test2@test.com" disabled className="w-full px-4 py-2 border rounded-lg bg-gray-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Display Name</label>
+                  <input type="text" placeholder="Enter your name" className="w-full px-4 py-2 border rounded-lg" />
+                </div>
+                <button className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {showComposer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex justify-between items-center">
               <h2 className="text-2xl font-bold">Create Post</h2>
-              <button 
-                onClick={() => {
-                  setShowComposer(false);
-                  resetComposer();
-                }} 
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-                disabled={loading}
-              >
-                ×
-              </button>
+              <button onClick={() => { setShowComposer(false); resetComposer(); }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
             
             <div className="p-6 space-y-6">
               <div>
                 <label className="block font-semibold mb-2">Post Caption</label>
-                <textarea 
-                  value={currentPost.caption} 
-                  onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})} 
-                  placeholder="Write your post here..." 
-                  className="w-full border rounded-lg p-3 h-32 resize-none" 
-                  disabled={loading}
-                />
+                <textarea value={currentPost.caption} onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})} placeholder="Write your post here..." className="w-full border rounded-lg p-3 h-32 resize-none" />
               </div>
 
               <div>
                 <label className="block font-semibold mb-2">Media (Optional)</label>
-                <input 
-                  type="file" 
-                  accept="image/*,video/*" 
-                  onChange={handleMediaUpload} 
-                  className="w-full border rounded-lg p-2" 
-                  disabled={loading}
-                />
+                <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} className="w-full border rounded-lg p-2" />
                 {currentPost.media && (
                   <div className="mt-4">
                     {currentPost.mediaType === 'image' ? (
@@ -484,76 +482,37 @@ const SocialPlanner = () => {
                 <label className="block font-semibold mb-2">Post To</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      checked={currentPost.platforms.facebook} 
-                      onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, facebook: e.target.checked}})} 
-                      disabled={loading}
-                    />
+                    <input type="checkbox" checked={currentPost.platforms.facebook} onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, facebook: e.target.checked}})} />
                     <Facebook className="w-5 h-5" />
                     Facebook
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      checked={currentPost.platforms.linkedin} 
-                      onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, linkedin: e.target.checked}})} 
-                      disabled={loading}
-                    />
+                    <input type="checkbox" checked={currentPost.platforms.linkedin} onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, linkedin: e.target.checked}})} />
                     <Linkedin className="w-5 h-5" />
                     LinkedIn
-                  </label>
-                  <label className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                    <input 
-                      type="checkbox" 
-                      checked={currentPost.platforms.instagram} 
-                      disabled
-                    />
-                    <Instagram className="w-5 h-5" />
-                    Instagram
                   </label>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold mb-2">Schedule Date</label>
-                  <input 
-                    type="date" 
-                    value={currentPost.scheduleDate} 
-                    onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})} 
-                    className="w-full border rounded-lg p-2" 
-                    disabled={loading}
-                  />
+                  <label className="block font-semibold mb-2">Date</label>
+                  <input type="date" value={currentPost.scheduleDate} onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})} className="w-full border rounded-lg p-2" />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">Schedule Time</label>
-                  <input 
-                    type="time" 
-                    value={currentPost.scheduleTime} 
-                    onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})} 
-                    className="w-full border rounded-lg p-2" 
-                    disabled={loading}
-                  />
+                  <label className="block font-semibold mb-2">Time</label>
+                  <input type="time" value={currentPost.scheduleTime} onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})} className="w-full border rounded-lg p-2" />
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <button 
-                  onClick={handlePostNow} 
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
-                >
+              <div className="flex gap-4">
+                <button onClick={handlePostNow} disabled={loading} className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
                   <Send className="w-5 h-5" />
                   {loading ? 'Posting...' : 'Post Now'}
                 </button>
-                <button 
-                  onClick={handleSchedulePost} 
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
-                >
-                  <Calendar className="w-5 h-5" />
-                  {loading ? 'Scheduling...' : 'Schedule Post'}
+                <button onClick={handleSchedulePost} disabled={loading} className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  {loading ? 'Scheduling...' : 'Schedule'}
                 </button>
               </div>
             </div>

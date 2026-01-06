@@ -223,7 +223,7 @@ const SocialPlanner = () => {
               </div>
             </div>
           </div>
-          <div className="text-sm text-blue-50">© 2026 Core Business Corp. Todos los derechos reservados.</div>
+          <div className="text-sm text-blue-50">© 2026 Rubicon Core.</div>
         </div>
 
         {/* Lado Derecho - Login */}

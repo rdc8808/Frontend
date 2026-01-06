@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Facebook, Linkedin, Instagram, Send, Edit2, Trash2, Plus } from 'lucide-react';
 
 // For now, using localStorage. Later we'll connect to backend API
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://social-planner-api.onrender.com';
 
 const SocialPlanner = () => {
   const [view, setView] = useState('calendar');

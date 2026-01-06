@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, Facebook, Linkedin, Instagram, Send, Edit2, Trash2, Plus } from 'lucide-react';
 
-// For now, using localStorage. Later we'll connect to backend API
 const API_URL = 'https://social-planner-api.onrender.com';
+const USER_ID = 'default_user'; // In production, this would be the logged-in user
 
 const SocialPlanner = () => {
   const [view, setView] = useState('calendar');
@@ -22,35 +23,38 @@ const SocialPlanner = () => {
     scheduleTime: ''
   });
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [loading, setLoading] = useState(false);
 
-  // Load data from localStorage on mount
+  // Load connection status from backend
   useEffect(() => {
-    const savedPosts = localStorage.getItem('social_posts');
-    const savedAccounts = localStorage.getItem('connected_accounts');
-    
-    if (savedPosts) {
-      try {
-        setPosts(JSON.parse(savedPosts));
-      } catch (e) {
-        console.error('Error loading posts:', e);
-      }
-    }
-    
-    if (savedAccounts) {
-      try {
-        setConnectedAccounts(JSON.parse(savedAccounts));
-      } catch (e) {
-        console.error('Error loading accounts:', e);
-      }
-    }
+    checkConnections();
+    loadPosts();
   }, []);
 
-  // Save posts to localStorage whenever they change
-  useEffect(() => {
-    if (posts.length > 0) {
-      localStorage.setItem('social_posts', JSON.stringify(posts));
+  const checkConnections = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/connections?userId=${USER_ID}`);
+      const data = await response.json();
+      setConnectedAccounts(data);
+    } catch (error) {
+      console.error('Error checking connections:', error);
     }
-  }, [posts]);
+  };
+
+  const loadPosts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/posts?userId=${USER_ID}`);
+      const data = await response.json();
+      setPosts(data);
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      // Fallback to localStorage
+      const savedPosts = localStorage.getItem('social_posts');
+      if (savedPosts) {
+        setPosts(JSON.parse(savedPosts));
+      }
+    }
+  };
 
   const handleMediaUpload = (e) => {
     const file = e.target.files[0];
@@ -73,16 +77,43 @@ const SocialPlanner = () => {
       return;
     }
 
-    const newPost = {
-      id: Date.now(),
-      ...currentPost,
-      status: 'scheduled',
-      createdAt: new Date().toISOString()
-    };
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: USER_ID,
+          postData: currentPost
+        })
+      });
 
-    setPosts([...posts, newPost]);
-    setShowComposer(false);
-    resetComposer();
+      if (response.ok) {
+        alert('Post scheduled successfully!');
+        await loadPosts();
+        setShowComposer(false);
+        resetComposer();
+      } else {
+        throw new Error('Failed to schedule post');
+      }
+    } catch (error) {
+      console.error('Error scheduling post:', error);
+      alert('Error scheduling post. Saving locally instead.');
+      // Fallback to localStorage
+      const newPost = {
+        id: Date.now(),
+        ...currentPost,
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      };
+      const updatedPosts = [...posts, newPost];
+      setPosts(updatedPosts);
+      localStorage.setItem('social_posts', JSON.stringify(updatedPosts));
+      setShowComposer(false);
+      resetComposer();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePostNow = async () => {
@@ -91,20 +122,33 @@ const SocialPlanner = () => {
       return;
     }
 
-    // TODO: Call backend API
-    // For now just save locally
-    const newPost = {
-      id: Date.now(),
-      ...currentPost,
-      status: 'published',
-      createdAt: new Date().toISOString(),
-      publishedAt: new Date().toISOString()
-    };
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/post-now`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: USER_ID,
+          postData: currentPost
+        })
+      });
 
-    setPosts([...posts, newPost]);
-    alert('Post saved! (Connect to backend to actually publish)');
-    setShowComposer(false);
-    resetComposer();
+      if (response.ok) {
+        const result = await response.json();
+        alert('Post published successfully!');
+        await loadPosts();
+        setShowComposer(false);
+        resetComposer();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to post');
+      }
+    } catch (error) {
+      console.error('Error posting:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetComposer = () => {
@@ -118,16 +162,29 @@ const SocialPlanner = () => {
     });
   };
 
-  const deletePost = (postId) => {
-    setPosts(posts.filter(p => p.id !== postId));
+  const deletePost = async (postId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await loadPosts();
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      // Fallback to localStorage
+      const updatedPosts = posts.filter(p => p.id !== postId);
+      setPosts(updatedPosts);
+      localStorage.setItem('social_posts', JSON.stringify(updatedPosts));
+    }
   };
 
   const connectAccount = (platform) => {
-    // TODO: Open OAuth flow to backend
-    const updated = { ...connectedAccounts, [platform]: true };
-    setConnectedAccounts(updated);
-    localStorage.setItem('connected_accounts', JSON.stringify(updated));
-    alert(`${platform} connected! (Demo mode - connect backend for real OAuth)`);
+    // Redirect to backend OAuth flow
+    window.location.href = `${API_URL}/auth/${platform}?userId=${USER_ID}`;
   };
 
   const getDaysInMonth = (date) => {
@@ -244,7 +301,7 @@ const SocialPlanner = () => {
                       {post.platforms.facebook && <Facebook className="w-4 h-4 text-blue-600" />}
                       {post.platforms.linkedin && <Linkedin className="w-4 h-4 text-blue-700" />}
                       {post.platforms.instagram && <Instagram className="w-4 h-4 text-pink-600" />}
-                      <span className={`text-xs px-2 py-1 rounded ${post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      <span className={`text-xs px-2 py-1 rounded ${post.status === 'published' ? 'bg-green-100 text-green-800' : post.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {post.status}
                       </span>
                     </div>
@@ -260,6 +317,8 @@ const SocialPlanner = () => {
                     )}
                     <div className="text-sm text-gray-500">
                       {post.scheduleDate && post.scheduleTime && `Scheduled for ${post.scheduleDate} at ${post.scheduleTime}`}
+                      {post.publishedAt && ` - Published on ${new Date(post.publishedAt).toLocaleString()}`}
+                      {post.error && <div className="text-red-600 mt-1">Error: {post.error}</div>}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -287,6 +346,24 @@ const SocialPlanner = () => {
       </div>
     );
   };
+
+  // Check for OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const error = urlParams.get('error');
+    
+    if (connected) {
+      alert(`${connected} connected successfully!`);
+      checkConnections();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (error) {
+      alert(`Connection failed: ${error}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -326,6 +403,8 @@ const SocialPlanner = () => {
             <button 
               onClick={() => connectAccount('instagram')} 
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 ${connectedAccounts.instagram ? 'border-pink-600 bg-pink-50' : 'border-gray-300 hover:border-gray-400'}`}
+              disabled
+              title="Instagram coming soon"
             >
               <Instagram className="w-5 h-5" />
               Instagram {connectedAccounts.instagram && '✓'}
@@ -363,6 +442,7 @@ const SocialPlanner = () => {
                   resetComposer();
                 }} 
                 className="text-gray-500 hover:text-gray-700 text-2xl"
+                disabled={loading}
               >
                 ×
               </button>
@@ -376,6 +456,7 @@ const SocialPlanner = () => {
                   onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})} 
                   placeholder="Write your post here..." 
                   className="w-full border rounded-lg p-3 h-32 resize-none" 
+                  disabled={loading}
                 />
               </div>
 
@@ -386,6 +467,7 @@ const SocialPlanner = () => {
                   accept="image/*,video/*" 
                   onChange={handleMediaUpload} 
                   className="w-full border rounded-lg p-2" 
+                  disabled={loading}
                 />
                 {currentPost.media && (
                   <div className="mt-4">
@@ -406,6 +488,7 @@ const SocialPlanner = () => {
                       type="checkbox" 
                       checked={currentPost.platforms.facebook} 
                       onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, facebook: e.target.checked}})} 
+                      disabled={loading}
                     />
                     <Facebook className="w-5 h-5" />
                     Facebook
@@ -415,15 +498,16 @@ const SocialPlanner = () => {
                       type="checkbox" 
                       checked={currentPost.platforms.linkedin} 
                       onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, linkedin: e.target.checked}})} 
+                      disabled={loading}
                     />
                     <Linkedin className="w-5 h-5" />
                     LinkedIn
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 opacity-50 cursor-not-allowed">
                     <input 
                       type="checkbox" 
                       checked={currentPost.platforms.instagram} 
-                      onChange={(e) => setCurrentPost({...currentPost, platforms: {...currentPost.platforms, instagram: e.target.checked}})} 
+                      disabled
                     />
                     <Instagram className="w-5 h-5" />
                     Instagram
@@ -439,6 +523,7 @@ const SocialPlanner = () => {
                     value={currentPost.scheduleDate} 
                     onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})} 
                     className="w-full border rounded-lg p-2" 
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -448,6 +533,7 @@ const SocialPlanner = () => {
                     value={currentPost.scheduleTime} 
                     onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})} 
                     className="w-full border rounded-lg p-2" 
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -455,17 +541,19 @@ const SocialPlanner = () => {
               <div className="flex gap-4 pt-4">
                 <button 
                   onClick={handlePostNow} 
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2"
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
                 >
                   <Send className="w-5 h-5" />
-                  Post Now
+                  {loading ? 'Posting...' : 'Post Now'}
                 </button>
                 <button 
                   onClick={handleSchedulePost} 
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2"
+                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
                 >
                   <Calendar className="w-5 h-5" />
-                  Schedule Post
+                  {loading ? 'Scheduling...' : 'Schedule Post'}
                 </button>
               </div>
             </div>

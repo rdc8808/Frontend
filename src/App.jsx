@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import RubiconLogo from './assets/Rubicon-Core-Icon.png';
 import CBCLogo from './assets/logocbc.png';
 
@@ -1396,6 +1397,7 @@ const SocialPlanner = () => {
           </div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 };

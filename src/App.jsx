@@ -61,7 +61,7 @@ const SocialPlanner = () => {
       const allowedDomains = ['@corebusinesscorp.com', '@rubicondigitalcorp.com'];
       const emailDomain = authForm.email.substring(authForm.email.indexOf('@'));
       if (!allowedDomains.includes(emailDomain)) {
-        alert('Solo se permiten correos corporativos de Core Business Corp (@corebusinesscorp.com) o Rubicon Digital Corp (@rubicondigitalcorp.com)');
+        alert('Error. Solo se permiten correos corporativos');
         return;
       }
       const users = JSON.parse(localStorage.getItem('users') || '[]');
@@ -258,6 +258,33 @@ const SocialPlanner = () => {
 
   const connectAccount = (platform) => {
     window.location.href = `${API_URL}/auth/${platform}?userId=${currentUser.email}`;
+  };
+
+  const disconnectAccount = async (platform) => {
+    if (!confirm(`¿Estás seguro de desconectar ${platform === 'facebook' ? 'Facebook' : 'LinkedIn'}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          platform: platform
+        })
+      });
+
+      if (response.ok) {
+        alert(`${platform === 'facebook' ? 'Facebook' : 'LinkedIn'} desconectado exitosamente`);
+        checkConnections(currentUser.email);
+      } else {
+        alert('Error al desconectar la cuenta');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al desconectar la cuenta');
+    }
   };
 
   const stats = {
@@ -766,13 +793,28 @@ const SocialPlanner = () => {
                       <p className="text-sm text-gray-600">Conecta tu página de Facebook para programar publicaciones</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => !connectedAccounts.facebook && connectAccount('facebook')}
-                    disabled={connectedAccounts.facebook}
-                    className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.facebook ? 'bg-green-50 text-green-700 border border-green-300 cursor-default' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}
-                  >
-                    {connectedAccounts.facebook ? '✓ Conectado' : 'Conectar Facebook'}
-                  </button>
+                  <div className="flex gap-2">
+                    {connectedAccounts.facebook ? (
+                      <>
+                        <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
+                          ✓ Conectado
+                        </div>
+                        <button
+                          onClick={() => disconnectAccount('facebook')}
+                          className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
+                        >
+                          Desconectar
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => connectAccount('facebook')}
+                        className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
+                      >
+                        Conectar Facebook
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="bg-white rounded-lg p-6 border shadow-sm">
@@ -786,13 +828,28 @@ const SocialPlanner = () => {
                       <p className="text-sm text-gray-600">Conecta tu perfil profesional de LinkedIn para programar publicaciones</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => !connectedAccounts.linkedin && connectAccount('linkedin')}
-                    disabled={connectedAccounts.linkedin}
-                    className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.linkedin ? 'bg-green-50 text-green-700 border border-green-300 cursor-default' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}
-                  >
-                    {connectedAccounts.linkedin ? '✓ Conectado' : 'Conectar LinkedIn'}
-                  </button>
+                  <div className="flex gap-2">
+                    {connectedAccounts.linkedin ? (
+                      <>
+                        <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
+                          ✓ Conectado
+                        </div>
+                        <button
+                          onClick={() => disconnectAccount('linkedin')}
+                          className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
+                        >
+                          Desconectar
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => connectAccount('linkedin')}
+                        className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
+                      >
+                        Conectar LinkedIn
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

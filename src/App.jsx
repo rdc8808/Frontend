@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save } from 'lucide-react';
 import RubiconLogo from './assets/Rubicon-Core-Icon.png';
+import CBCLogo from './assets/logocbc.png';
 
 const API_URL = 'https://social-planner-api.onrender.com';
 
@@ -32,7 +33,7 @@ const SocialPlanner = () => {
   // Colores de la marca Core Business Corp
   const colors = {
     primaryBlue: '#0050cb',
-    turquoise: '#05b7be',
+    green: '#61CE70',
     darkBlue: '#0f2842',
     gray: '#606060',
     lightBlue: '#d9e8fc'
@@ -54,6 +55,13 @@ const SocialPlanner = () => {
     if (authMode === 'signup') {
       if (!authForm.fullName || !authForm.email || !authForm.password) {
         alert('Por favor, completa todos los campos');
+        return;
+      }
+      // Validar dominio de correo corporativo
+      const allowedDomains = ['@corebusinesscorp.com', '@rubicondigitalcorp.com'];
+      const emailDomain = authForm.email.substring(authForm.email.indexOf('@'));
+      if (!allowedDomains.includes(emailDomain)) {
+        alert('Solo se permiten correos corporativos de Core Business Corp (@corebusinesscorp.com) o Rubicon Digital Corp (@rubicondigitalcorp.com)');
         return;
       }
       const users = JSON.parse(localStorage.getItem('users') || '[]');
@@ -288,7 +296,7 @@ const SocialPlanner = () => {
           {dayPosts.length > 0 && (
             <div className="space-y-1">
               {dayPosts.map(post => (
-                <div key={post.id} className="text-xs bg-[#05b7be] text-white rounded px-2 py-1 truncate cursor-pointer hover:bg-[#0050cb]" onClick={() => {
+                <div key={post.id} className="text-xs bg-[#61CE70] text-white rounded px-2 py-1 truncate cursor-pointer hover:bg-[#0050cb]" onClick={() => {
                   setCurrentPost(post);
                   setShowComposer(true);
                 }}>
@@ -306,71 +314,129 @@ const SocialPlanner = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen">
-        {/* Lado Izquierdo - Branding con el degradado de la empresa */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#05b7be] to-[#0050cb] text-white p-12 flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center p-1">
-              <img src={RubiconLogo} alt="Rubicon Core" className="w-full h-full object-contain" />
-            </div>
-            <span className="text-2xl font-bold">Rubicon Core</span>
-          </div>
+      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        {/* Lado Izquierdo - Branding Corporativo */}
+        <div className="hidden lg:flex lg:w-1/2 bg-white p-12 flex-col justify-between border-r shadow-lg">
           <div>
-            <h1 className="text-4xl font-bold mb-4">Programa tus redes sociales con facilidad</h1>
-            <p className="text-lg mb-8 text-blue-50">Planifica, crea y programa tu contenido en múltiples plataformas desde un solo lugar.</p>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+            <img src={CBCLogo} alt="Core Business Corp" className="h-16 mb-8" />
+            <h1 className="text-4xl font-bold mb-4 text-[#0f2842]">Social Media Planner</h1>
+            <p className="text-lg text-gray-600 mb-12">Gestiona tus redes sociales de manera profesional desde una sola plataforma.</p>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-[#0050cb]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                 </div>
-                <span>Publicación multiplataforma</span>
+                <div>
+                  <h3 className="font-semibold text-[#0f2842] mb-1">Publicación multiplataforma</h3>
+                  <p className="text-sm text-gray-600">Publica en Facebook y LinkedIn simultáneamente</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5" />
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-[#61CE70]" />
                 </div>
-                <span>Programación inteligente</span>
+                <div>
+                  <h3 className="font-semibold text-[#0f2842] mb-1">Programación inteligente</h3>
+                  <p className="text-sm text-gray-600">Planifica tu contenido con anticipación</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5" />
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-6 h-6 text-purple-600" />
                 </div>
-                <span>Vista de calendario visual</span>
+                <div>
+                  <h3 className="font-semibold text-[#0f2842] mb-1">Vista de calendario</h3>
+                  <p className="text-sm text-gray-600">Visualiza y gestiona tus publicaciones</p>
+                </div>
               </div>
             </div>
           </div>
-          <div className="text-sm text-blue-50">© 2026 Rubicon Core.</div>
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <img src={RubiconLogo} alt="Rubicon" className="w-6 h-6" />
+            <span>Powered by Rubicon Core • © 2026 Core Business Corp</span>
+          </div>
         </div>
 
         {/* Lado Derecho - Login */}
-        <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
+        <div className="flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h2 className="text-3xl font-bold text-center mb-2" style={{ color: colors.darkBlue }}>Bienvenido</h2>
-              <p className="text-center text-gray-600 mb-6">Inicia sesión o crea una cuenta nueva</p>
-              <div className="flex gap-2 mb-6">
-                <button onClick={() => setAuthMode('signin')} className={`flex-1 py-3 rounded-lg font-medium transition-all ${authMode === 'signin' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-gray-500 hover:bg-gray-100'}`}>Ingresar</button>
-                <button onClick={() => setAuthMode('signup')} className={`flex-1 py-3 rounded-lg font-medium transition-all ${authMode === 'signup' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-gray-500 hover:bg-gray-100'}`}>Registrarse</button>
+            {/* Logo móvil */}
+            <div className="lg:hidden mb-8 text-center">
+              <img src={CBCLogo} alt="Core Business Corp" className="h-12 mx-auto mb-4" />
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-[#0f2842] mb-2">
+                  {authMode === 'signin' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                </h2>
+                <p className="text-gray-600">
+                  {authMode === 'signin' ? 'Accede a tu cuenta corporativa' : 'Regístrate con tu correo corporativo'}
+                </p>
               </div>
-              <div className="space-y-4">
+
+              <div className="flex gap-2 mb-6 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setAuthMode('signin')}
+                  className={`flex-1 py-2.5 rounded-md font-medium transition-all ${
+                    authMode === 'signin' ? 'bg-white text-[#0050cb] shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Ingresar
+                </button>
+                <button
+                  onClick={() => setAuthMode('signup')}
+                  className={`flex-1 py-2.5 rounded-md font-medium transition-all ${
+                    authMode === 'signup' ? 'bg-white text-[#0050cb] shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Registrarse
+                </button>
+              </div>
+
+              <form onSubmit={handleAuth} className="space-y-4">
                 {authMode === 'signup' && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Nombre Completo</label>
-                    <input type="text" value={authForm.fullName} onChange={(e) => setAuthForm({...authForm, fullName: e.target.value})} placeholder="Ej: Juan Pérez" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#05b7be] outline-none" />
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">Nombre Completo</label>
+                    <input
+                      type="text"
+                      value={authForm.fullName}
+                      onChange={(e) => setAuthForm({...authForm, fullName: e.target.value})}
+                      placeholder="Juan Pérez"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                    />
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Correo Electrónico</label>
-                  <input type="email" value={authForm.email} onChange={(e) => setAuthForm({...authForm, email: e.target.value})} placeholder="usuario@empresa.com" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#05b7be] outline-none" />
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Correo Electrónico Corporativo</label>
+                  <input
+                    type="email"
+                    value={authForm.email}
+                    onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
+                    placeholder="usuario@corebusinesscorp.com"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                  />
+                  {authMode === 'signup' && (
+                    <p className="text-xs text-gray-500 mt-1">Solo correos @corebusinesscorp.com o @rubicondigitalcorp.com</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Contraseña</label>
-                  <input type="password" value={authForm.password} onChange={(e) => setAuthForm({...authForm, password: e.target.value})} placeholder="••••••••" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#05b7be] outline-none" />
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Contraseña</label>
+                  <input
+                    type="password"
+                    value={authForm.password}
+                    onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                  />
                 </div>
-                <button onClick={handleAuth} className="w-full bg-[#0050cb] text-white py-3 rounded-lg hover:bg-[#0f2842] transition-colors font-medium">
+                <button
+                  type="submit"
+                  className="w-full bg-[#0050cb] text-white py-3.5 rounded-lg hover:bg-[#0f2842] transition-colors font-semibold shadow-lg hover:shadow-xl"
+                >
                   {authMode === 'signin' ? 'Iniciar Sesión' : 'Crear Cuenta'}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
@@ -384,7 +450,7 @@ const SocialPlanner = () => {
       <div className="w-64 bg-white border-r flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#05b7be] to-[#0050cb] rounded-lg flex items-center justify-center p-1.5">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5">
               <img src={RubiconLogo} alt="Rubicon Core" className="w-full h-full object-contain" />
             </div>
             <div>
@@ -394,7 +460,7 @@ const SocialPlanner = () => {
           </div>
         </div>
         <div className="p-4">
-          <button onClick={() => setShowComposer(true)} className="w-full bg-[#05b7be] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
+          <button onClick={() => setShowComposer(true)} className="w-full bg-[#61CE70] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
             <Plus className="w-5 h-5" />Crear Publicación
           </button>
         </div>
@@ -409,7 +475,7 @@ const SocialPlanner = () => {
             <FileText className="w-5 h-5" />
             <span className="flex-1 text-left">Borradores</span>
             {stats.drafts > 0 && (
-              <span className="bg-[#05b7be] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
+              <span className="bg-[#61CE70] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
             )}
           </button>
           <button onClick={() => setCurrentPage('connections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'connections' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
@@ -559,7 +625,7 @@ const SocialPlanner = () => {
                 <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Vista rápida de tus publicaciones</h3>
                 <p className="text-gray-500 mb-6">Haz clic en cualquiera de las tarjetas de arriba para ver tus publicaciones.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#05b7be] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#61CE70] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>
@@ -576,7 +642,7 @@ const SocialPlanner = () => {
                 <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No tienes borradores guardados</h3>
                 <p className="text-gray-500 mb-6">Los borradores te permiten guardar publicaciones y editarlas más tarde.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#05b7be] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#61CE70] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>
@@ -692,7 +758,7 @@ const SocialPlanner = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-[#0f2842] mb-1">Configuración OAuth Requerida</h3>
-                <p className="text-[#0f2842] text-sm opacity-80">Para habilitar conexiones reales con Facebook y LinkedIn, es necesario configurar las credenciales de API. El modo demo simula las cuentas para pruebas.</p>
+                <p className="text-[#0f2842] text-sm opacity-80">Para habilitar conexiones reales con Facebook y LinkedIn, es necesario configurar las credenciales de API.</p>
               </div>
             </div>
             <div className="grid gap-6">
@@ -704,10 +770,14 @@ const SocialPlanner = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Facebook</h3>
-                      <p className="text-sm text-gray-600">Conecta tu página de Facebook para programar posts</p>
+                      <p className="text-sm text-gray-600">Conecta tu página de Facebook para programar publicaciones</p>
                     </div>
                   </div>
-                  <button onClick={() => connectAccount('facebook')} className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.facebook ? 'bg-blue-50 text-[#0050cb] border border-[#0050cb]' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}>
+                  <button
+                    onClick={() => !connectedAccounts.facebook && connectAccount('facebook')}
+                    disabled={connectedAccounts.facebook}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.facebook ? 'bg-green-50 text-green-700 border border-green-300 cursor-default' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}
+                  >
                     {connectedAccounts.facebook ? '✓ Conectado' : 'Conectar Facebook'}
                   </button>
                 </div>
@@ -720,10 +790,14 @@ const SocialPlanner = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">LinkedIn</h3>
-                      <p className="text-sm text-gray-600">Conecta tu perfil profesional de LinkedIn</p>
+                      <p className="text-sm text-gray-600">Conecta tu perfil profesional de LinkedIn para programar publicaciones</p>
                     </div>
                   </div>
-                  <button onClick={() => connectAccount('linkedin')} className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.linkedin ? 'bg-blue-50 text-[#0050cb] border border-[#0050cb]' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}>
+                  <button
+                    onClick={() => !connectedAccounts.linkedin && connectAccount('linkedin')}
+                    disabled={connectedAccounts.linkedin}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all ${connectedAccounts.linkedin ? 'bg-green-50 text-green-700 border border-green-300 cursor-default' : 'bg-[#0050cb] text-white hover:bg-[#0f2842]'}`}
+                  >
                     {connectedAccounts.linkedin ? '✓ Conectado' : 'Conectar LinkedIn'}
                   </button>
                 </div>
@@ -746,7 +820,7 @@ const SocialPlanner = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[#606060]">Nombre para mostrar</label>
-                    <input type="text" defaultValue={currentUser?.fullName} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#05b7be] outline-none" />
+                    <input type="text" defaultValue={currentUser?.fullName} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#61CE70] outline-none" />
                   </div>
                   <button className="px-6 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors">Guardar Cambios</button>
                 </div>
@@ -818,7 +892,7 @@ const SocialPlanner = () => {
                       value={currentPost.caption}
                       onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
                       placeholder="¿Qué quieres compartir hoy?"
-                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none"
                     />
                     <div className="text-xs text-gray-500 mt-2">{currentPost.caption.length} caracteres</div>
                   </div>
@@ -837,7 +911,7 @@ const SocialPlanner = () => {
                         </button>
                       </div>
                     ) : (
-                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#05b7be] hover:bg-gray-50 transition-all">
+                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#61CE70] hover:bg-gray-50 transition-all">
                         <Plus className="w-10 h-10 text-gray-400 mb-2" />
                         <span className="text-sm text-gray-600 font-medium">Añadir imagen o video</span>
                         <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4 (max. 10MB)</span>
@@ -900,10 +974,10 @@ const SocialPlanner = () => {
                         {/* Header del post */}
                         <div className="p-4 flex items-center gap-3">
                           <div className="w-10 h-10 bg-[#d9e8fc] rounded-full flex items-center justify-center">
-                            <span className="text-sm font-bold text-[#0050cb]">{currentUser?.fullName?.[0] || 'U'}</span>
+                            <span className="text-sm font-bold text-[#0050cb]">C</span>
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-sm text-gray-900">{currentUser?.fullName || 'Usuario'}</div>
+                            <div className="font-semibold text-sm text-gray-900">Core Business Corp</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                               Ahora · <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9V6h2v3h3v2h-3v3H9v-3H6V9h3z"/></svg>
                             </div>
@@ -948,11 +1022,11 @@ const SocialPlanner = () => {
                         {/* Header del post */}
                         <div className="p-4 flex items-start gap-3">
                           <div className="w-12 h-12 bg-[#d9e8fc] rounded-full flex items-center justify-center">
-                            <span className="text-base font-bold text-[#0050cb]">{currentUser?.fullName?.[0] || 'U'}</span>
+                            <span className="text-base font-bold text-[#0050cb]">C</span>
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-sm text-gray-900">{currentUser?.fullName || 'Usuario'}</div>
-                            <div className="text-xs text-gray-600">Profesional</div>
+                            <div className="font-semibold text-sm text-gray-900">Core Business Corp</div>
+                            <div className="text-xs text-gray-600">Empresa</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                               Ahora · <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM3 8a5 5 0 1110 0A5 5 0 013 8z"/></svg>
                             </div>
@@ -1085,7 +1159,7 @@ const SocialPlanner = () => {
                       disabled={loading || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                       className="w-full px-5 py-3 text-left hover:bg-gray-50 transition-colors flex items-start gap-3 border-b disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Clock className="w-5 h-5 text-[#05b7be] mt-0.5 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-[#61CE70] mt-0.5 flex-shrink-0" />
                       <div>
                         <div className="font-semibold text-gray-900 text-sm">Programar Publicación</div>
                         <div className="text-xs text-gray-500 mt-0.5">
@@ -1141,7 +1215,7 @@ const SocialPlanner = () => {
                   value={currentPost.scheduleDate}
                   onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent"
                 />
               </div>
 
@@ -1152,24 +1226,33 @@ const SocialPlanner = () => {
                   type="time"
                   value={currentPost.scheduleTime}
                   onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent"
                 />
               </div>
 
               {/* Resumen */}
               {currentPost.scheduleDate && currentPost.scheduleTime && (
-                <div className="bg-[#05b7be]/10 border border-[#05b7be]/30 rounded-lg p-4">
+                <div className="bg-[#61CE70]/10 border border-[#61CE70]/30 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-[#05b7be] mt-0.5 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-[#61CE70] mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-[#0f2842]">Tu publicación se programará para:</div>
                       <div className="text-sm text-gray-700 mt-1">
-                        {new Date(currentPost.scheduleDate).toLocaleDateString('es-PE', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })} a las {currentPost.scheduleTime}
+                        {(() => {
+                          const [year, month, day] = currentPost.scheduleDate.split('-');
+                          const [hours, minutes] = currentPost.scheduleTime.split(':');
+                          const date = new Date(year, month - 1, day);
+                          const hour = parseInt(hours);
+                          const ampm = hour >= 12 ? 'PM' : 'AM';
+                          const displayHour = hour % 12 || 12;
+
+                          return `${date.toLocaleDateString('es-PE', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })} a las ${displayHour}:${minutes} ${ampm}`;
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1195,7 +1278,7 @@ const SocialPlanner = () => {
                   setShowScheduleModal(false);
                 }}
                 disabled={!currentPost.scheduleDate || !currentPost.scheduleTime}
-                className="px-6 py-2.5 bg-[#05b7be] text-white font-semibold rounded-lg hover:bg-[#0050cb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-[#61CE70] text-white font-semibold rounded-lg hover:bg-[#4db85f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Clock className="w-5 h-5" />
                 Programar

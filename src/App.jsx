@@ -164,6 +164,13 @@ const SocialPlanner = () => {
   const handleMediaUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (200MB max for LinkedIn, Facebook allows more)
+      const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+      if (file.size > maxSize) {
+        alert('El archivo es demasiado grande. El tamaño máximo es 200MB.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setCurrentPost({ ...currentPost, media: reader.result });
@@ -1059,7 +1066,11 @@ const SocialPlanner = () => {
                     <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Multimedia</label>
                     {currentPost.media ? (
                       <div className="relative">
-                        <img src={currentPost.media} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
+                        {currentPost.media.startsWith('data:video') ? (
+                          <video src={currentPost.media} controls className="w-full h-64 object-cover rounded-lg" />
+                        ) : (
+                          <img src={currentPost.media} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
+                        )}
                         <button
                           onClick={() => setCurrentPost({...currentPost, media: null})}
                           className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
@@ -1071,7 +1082,7 @@ const SocialPlanner = () => {
                       <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#0050cb] hover:bg-gray-50 transition-all">
                         <Plus className="w-10 h-10 text-gray-400 mb-2" />
                         <span className="text-sm text-gray-600 font-medium">Añadir imagen o video</span>
-                        <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4 (max. 10MB)</span>
+                        <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4, MOV (max. 200MB)</span>
                         <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} className="hidden" />
                       </label>
                     )}
@@ -1151,7 +1162,11 @@ const SocialPlanner = () => {
                         {/* Media */}
                         {currentPost.media && (
                           <div className="relative">
-                            <img src={currentPost.media} alt="Post media" className="w-full" />
+                            {currentPost.media.startsWith('data:video') ? (
+                              <video src={currentPost.media} controls className="w-full" />
+                            ) : (
+                              <img src={currentPost.media} alt="Post media" className="w-full" />
+                            )}
                           </div>
                         )}
 
@@ -1203,7 +1218,11 @@ const SocialPlanner = () => {
                         {/* Media */}
                         {currentPost.media && (
                           <div className="relative bg-gray-100">
-                            <img src={currentPost.media} alt="Post media" className="w-full" />
+                            {currentPost.media.startsWith('data:video') ? (
+                              <video src={currentPost.media} controls className="w-full" />
+                            ) : (
+                              <img src={currentPost.media} alt="Post media" className="w-full" />
+                            )}
                           </div>
                         )}
 

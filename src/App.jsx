@@ -51,45 +51,26 @@ const SocialPlanner = () => {
 
     // Handle OAuth callback from LinkedIn/Facebook
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
+    const connected = urlParams.get('connected');
     const error = urlParams.get('error');
 
-    if (error === 'auth_failed' || error) {
+    if (error === 'auth_failed') {
       alert('Error al conectar la cuenta. Por favor, intenta de nuevo.');
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (code && state) {
-      // Exchange OAuth code with backend
-      handleOAuthCallback(code, state);
-    }
-  }, []);
+    } else if (connected) {
+      const platformName = connected === 'facebook' ? 'Facebook' : 'LinkedIn';
+      alert(`¡${platformName} conectado exitosamente!`);
 
-  const handleOAuthCallback = async (code, state) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/callback?code=${code}&state=${state}`);
-
-      if (response.ok) {
-        const [platform] = state.split('_');
-        const platformName = platform === 'facebook' ? 'Facebook' : 'LinkedIn';
-        alert(`¡${platformName} conectado exitosamente!`);
-
-        // Reload connections
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-          const user = JSON.parse(savedUser);
-          checkConnections(user.email);
-        }
-      } else {
-        alert('Error al conectar la cuenta');
+      // Reload connections
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        checkConnections(user.email);
       }
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      alert('Error al conectar con el servidor');
-    } finally {
-      // Clean up URL
+
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  };
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();

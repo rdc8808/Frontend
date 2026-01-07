@@ -812,11 +812,70 @@ const SocialPlanner = () => {
                     <input type="email" value={currentUser?.email} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-[#606060]">Nombre para mostrar</label>
-                    <input type="text" defaultValue={currentUser?.fullName} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none" />
+                    <label className="block text-sm font-medium mb-2 text-[#606060]">Nombre Completo</label>
+                    <input type="text" value={currentUser?.fullName} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-500" />
                   </div>
-                  <button className="px-6 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors">Guardar Cambios</button>
                 </div>
+              </div>
+              <div className="bg-white rounded-lg p-6 border shadow-sm">
+                <h3 className="font-semibold text-lg mb-4">Cambiar Contraseña</h3>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const currentPassword = e.target.currentPassword.value;
+                  const newPassword = e.target.newPassword.value;
+                  const confirmPassword = e.target.confirmPassword.value;
+
+                  if (!currentPassword || !newPassword || !confirmPassword) {
+                    alert('Por favor, completa todos los campos');
+                    return;
+                  }
+
+                  if (currentPassword !== currentUser.password) {
+                    alert('La contraseña actual es incorrecta');
+                    return;
+                  }
+
+                  if (newPassword !== confirmPassword) {
+                    alert('Las contraseñas nuevas no coinciden');
+                    return;
+                  }
+
+                  if (newPassword.length < 6) {
+                    alert('La nueva contraseña debe tener al menos 6 caracteres');
+                    return;
+                  }
+
+                  // Update password
+                  const users = JSON.parse(localStorage.getItem('users') || '[]');
+                  const userIndex = users.findIndex(u => u.email === currentUser.email);
+                  if (userIndex !== -1) {
+                    users[userIndex].password = newPassword;
+                    localStorage.setItem('users', JSON.stringify(users));
+
+                    const updatedUser = {...currentUser, password: newPassword};
+                    setCurrentUser(updatedUser);
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+                    alert('¡Contraseña actualizada exitosamente!');
+                    e.target.reset();
+                  } else {
+                    alert('Error al actualizar la contraseña');
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#606060]">Contraseña Actual</label>
+                    <input type="password" name="currentPassword" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none" placeholder="Ingresa tu contraseña actual" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#606060]">Nueva Contraseña</label>
+                    <input type="password" name="newPassword" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none" placeholder="Mínimo 6 caracteres" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#606060]">Confirmar Nueva Contraseña</label>
+                    <input type="password" name="confirmPassword" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none" placeholder="Repite la nueva contraseña" />
+                  </div>
+                  <button type="submit" className="px-6 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors font-medium">Actualizar Contraseña</button>
+                </form>
               </div>
             </div>
           </div>

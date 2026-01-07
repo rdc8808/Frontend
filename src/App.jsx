@@ -33,7 +33,7 @@ const SocialPlanner = () => {
   // Colores de la marca Core Business Corp
   const colors = {
     primaryBlue: '#0050cb',
-    green: '#61CE70',
+    green: '#0050cb',
     darkBlue: '#0f2842',
     gray: '#606060',
     lightBlue: '#d9e8fc'
@@ -296,7 +296,7 @@ const SocialPlanner = () => {
           {dayPosts.length > 0 && (
             <div className="space-y-1">
               {dayPosts.map(post => (
-                <div key={post.id} className="text-xs bg-[#61CE70] text-white rounded px-2 py-1 truncate cursor-pointer hover:bg-[#0050cb]" onClick={() => {
+                <div key={post.id} className="text-xs bg-[#0050cb] text-white rounded px-2 py-1 truncate cursor-pointer hover:bg-[#0050cb]" onClick={() => {
                   setCurrentPost(post);
                   setShowComposer(true);
                 }}>
@@ -316,8 +316,8 @@ const SocialPlanner = () => {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Lado Izquierdo - Branding Corporativo */}
-        <div className="hidden lg:flex lg:w-1/2 bg-white p-12 flex-col justify-between border-r shadow-lg">
-          <div>
+        <div className="hidden lg:flex lg:w-1/2 bg-white p-12 flex-col justify-center items-center border-r shadow-lg">
+          <div className="max-w-lg">
             <img src={CBCLogo} alt="Core Business Corp" className="h-16 mb-8" />
             <h1 className="text-4xl font-bold mb-4 text-[#0f2842]">Social Media Planner</h1>
             <p className="text-lg text-gray-600 mb-12">Gestiona tus redes sociales de manera profesional desde una sola plataforma.</p>
@@ -333,7 +333,7 @@ const SocialPlanner = () => {
               </div>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-6 h-6 text-[#61CE70]" />
+                  <Clock className="w-6 h-6 text-[#0050cb]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-[#0f2842] mb-1">Programación inteligente</h3>
@@ -350,10 +350,6 @@ const SocialPlanner = () => {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
-            <img src={RubiconLogo} alt="Rubicon" className="w-6 h-6" />
-            <span>Powered by Rubicon Core • © 2026 Core Business Corp</span>
           </div>
         </div>
 
@@ -403,7 +399,7 @@ const SocialPlanner = () => {
                       value={authForm.fullName}
                       onChange={(e) => setAuthForm({...authForm, fullName: e.target.value})}
                       placeholder="Juan Pérez"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none transition-all"
                     />
                   </div>
                 )}
@@ -414,11 +410,8 @@ const SocialPlanner = () => {
                     value={authForm.email}
                     onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
                     placeholder="usuario@corebusinesscorp.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none transition-all"
                   />
-                  {authMode === 'signup' && (
-                    <p className="text-xs text-gray-500 mt-1">Solo correos @corebusinesscorp.com o @rubicondigitalcorp.com</p>
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">Contraseña</label>
@@ -427,7 +420,7 @@ const SocialPlanner = () => {
                     value={authForm.password}
                     onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 <button
@@ -460,7 +453,7 @@ const SocialPlanner = () => {
           </div>
         </div>
         <div className="p-4">
-          <button onClick={() => setShowComposer(true)} className="w-full bg-[#61CE70] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
+          <button onClick={() => setShowComposer(true)} className="w-full bg-[#0050cb] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
             <Plus className="w-5 h-5" />Crear Publicación
           </button>
         </div>
@@ -475,7 +468,7 @@ const SocialPlanner = () => {
             <FileText className="w-5 h-5" />
             <span className="flex-1 text-left">Borradores</span>
             {stats.drafts > 0 && (
-              <span className="bg-[#61CE70] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
+              <span className="bg-[#0050cb] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
             )}
           </button>
           <button onClick={() => setCurrentPage('connections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'connections' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
@@ -625,7 +618,7 @@ const SocialPlanner = () => {
                 <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Vista rápida de tus publicaciones</h3>
                 <p className="text-gray-500 mb-6">Haz clic en cualquiera de las tarjetas de arriba para ver tus publicaciones.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#61CE70] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>
@@ -642,7 +635,7 @@ const SocialPlanner = () => {
                 <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No tienes borradores guardados</h3>
                 <p className="text-gray-500 mb-6">Los borradores te permiten guardar publicaciones y editarlas más tarde.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#61CE70] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>
@@ -820,7 +813,7 @@ const SocialPlanner = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[#606060]">Nombre para mostrar</label>
-                    <input type="text" defaultValue={currentUser?.fullName} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#61CE70] outline-none" />
+                    <input type="text" defaultValue={currentUser?.fullName} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none" />
                   </div>
                   <button className="px-6 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors">Guardar Cambios</button>
                 </div>
@@ -892,7 +885,7 @@ const SocialPlanner = () => {
                       value={currentPost.caption}
                       onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
                       placeholder="¿Qué quieres compartir hoy?"
-                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
                     />
                     <div className="text-xs text-gray-500 mt-2">{currentPost.caption.length} caracteres</div>
                   </div>
@@ -911,7 +904,7 @@ const SocialPlanner = () => {
                         </button>
                       </div>
                     ) : (
-                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#61CE70] hover:bg-gray-50 transition-all">
+                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#0050cb] hover:bg-gray-50 transition-all">
                         <Plus className="w-10 h-10 text-gray-400 mb-2" />
                         <span className="text-sm text-gray-600 font-medium">Añadir imagen o video</span>
                         <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4 (max. 10MB)</span>
@@ -1159,7 +1152,7 @@ const SocialPlanner = () => {
                       disabled={loading || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                       className="w-full px-5 py-3 text-left hover:bg-gray-50 transition-colors flex items-start gap-3 border-b disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Clock className="w-5 h-5 text-[#61CE70] mt-0.5 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-[#0050cb] mt-0.5 flex-shrink-0" />
                       <div>
                         <div className="font-semibold text-gray-900 text-sm">Programar Publicación</div>
                         <div className="text-xs text-gray-500 mt-0.5">
@@ -1215,7 +1208,7 @@ const SocialPlanner = () => {
                   value={currentPost.scheduleDate}
                   onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent"
                 />
               </div>
 
@@ -1226,15 +1219,15 @@ const SocialPlanner = () => {
                   type="time"
                   value={currentPost.scheduleTime}
                   onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#61CE70] focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent"
                 />
               </div>
 
               {/* Resumen */}
               {currentPost.scheduleDate && currentPost.scheduleTime && (
-                <div className="bg-[#61CE70]/10 border border-[#61CE70]/30 rounded-lg p-4">
+                <div className="bg-[#0050cb]/10 border border-[#0050cb]/30 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-[#61CE70] mt-0.5 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-[#0050cb] mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-[#0f2842]">Tu publicación se programará para:</div>
                       <div className="text-sm text-gray-700 mt-1">
@@ -1278,7 +1271,7 @@ const SocialPlanner = () => {
                   setShowScheduleModal(false);
                 }}
                 disabled={!currentPost.scheduleDate || !currentPost.scheduleTime}
-                className="px-6 py-2.5 bg-[#61CE70] text-white font-semibold rounded-lg hover:bg-[#4db85f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-[#0050cb] text-white font-semibold rounded-lg hover:bg-[#4db85f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Clock className="w-5 h-5" />
                 Programar

@@ -98,21 +98,14 @@ const SocialPlanner = () => {
 
   const loadPosts = async (email) => {
     try {
-      // Cargar desde localStorage primero
-      const localPosts = JSON.parse(localStorage.getItem(`posts_${email}`) || '[]');
-      setPosts(localPosts);
-
-      // Intentar sincronizar con el servidor
       const response = await fetch(`${API_URL}/api/posts?userId=${email}`);
+      if (!response.ok) throw new Error('Error al cargar posts');
+
       const data = await response.json();
-      if (data && Array.isArray(data)) {
-        setPosts(data);
-      }
+      setPosts(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error:', error);
-      // Si falla la API, usar solo localStorage
-      const localPosts = JSON.parse(localStorage.getItem(`posts_${email}`) || '[]');
-      setPosts(localPosts);
+      console.error('Error al cargar posts:', error);
+      setPosts([]);
     }
   };
 
@@ -138,31 +131,30 @@ const SocialPlanner = () => {
     }
     setLoading(true);
     try {
-      const postData = {
-        ...currentPost,
-        status: 'published',
-        id: currentPost.id || Date.now(),
-        publishedAt: new Date().toISOString()
-      };
+      // Publicar en el backend (que publicará en Facebook/LinkedIn)
+      const response = await fetch(`${API_URL}/api/post-now`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          postData: currentPost
+        })
+      });
 
-      // Guardar en localStorage
-      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
-      if (currentPost.id) {
-        // Actualizar post existente
-        const index = userPosts.findIndex(p => p.id === currentPost.id);
-        if (index !== -1) userPosts[index] = postData;
-      } else {
-        // Nuevo post
-        userPosts.push(postData);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al publicar');
       }
-      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
 
-      alert('¡Publicado con éxito!');
+      alert('¡Publicado con éxito en tus redes sociales!');
       loadPosts(currentUser.email);
       setShowComposer(false);
       resetCurrentPost();
+      setShowActionMenu(false);
     } catch (error) {
-      alert('Error al publicar');
+      console.error('Error:', error);
+      alert(`Error al publicar: ${error.message}`);
     }
     setLoading(false);
   };
@@ -182,28 +174,29 @@ const SocialPlanner = () => {
     }
     setLoading(true);
     try {
-      const postData = {
-        ...currentPost,
-        status: 'scheduled',
-        id: currentPost.id || Date.now()
-      };
+      const response = await fetch(`${API_URL}/api/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          postData: currentPost
+        })
+      });
 
-      // Guardar en localStorage
-      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
-      if (currentPost.id) {
-        const index = userPosts.findIndex(p => p.id === currentPost.id);
-        if (index !== -1) userPosts[index] = postData;
-      } else {
-        userPosts.push(postData);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al programar');
       }
-      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
 
-      alert('¡Publicación programada con éxito!');
+      alert(`¡Publicación programada para ${currentPost.scheduleDate} a las ${currentPost.scheduleTime}!`);
       loadPosts(currentUser.email);
       setShowComposer(false);
       resetCurrentPost();
+      setShowActionMenu(false);
     } catch (error) {
-      alert('Error al programar');
+      console.error('Error:', error);
+      alert(`Error al programar: ${error.message}`);
     }
     setLoading(false);
   };
@@ -215,28 +208,29 @@ const SocialPlanner = () => {
     }
     setLoading(true);
     try {
-      const postData = {
-        ...currentPost,
-        status: 'draft',
-        id: currentPost.id || Date.now()
-      };
+      const response = await fetch(`${API_URL}/api/drafts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          postData: currentPost
+        })
+      });
 
-      // Guardar en localStorage
-      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
-      if (currentPost.id) {
-        const index = userPosts.findIndex(p => p.id === currentPost.id);
-        if (index !== -1) userPosts[index] = postData;
-      } else {
-        userPosts.push(postData);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar borrador');
       }
-      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
 
       alert('¡Borrador guardado con éxito!');
       loadPosts(currentUser.email);
       setShowComposer(false);
       resetCurrentPost();
+      setShowActionMenu(false);
     } catch (error) {
-      alert('Error al guardar borrador');
+      console.error('Error:', error);
+      alert(`Error al guardar borrador: ${error.message}`);
     }
     setLoading(false);
   };
@@ -621,12 +615,21 @@ const SocialPlanner = () => {
                         Editar y Publicar
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (confirm('¿Estás seguro de eliminar este borrador?')) {
-                            const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
-                            const filtered = userPosts.filter(p => p.id !== post.id);
-                            localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(filtered));
-                            loadPosts(currentUser.email);
+                            try {
+                              const response = await fetch(`${API_URL}/api/posts/${post.id}`, {
+                                method: 'DELETE'
+                              });
+                              if (response.ok) {
+                                loadPosts(currentUser.email);
+                              } else {
+                                alert('Error al eliminar el borrador');
+                              }
+                            } catch (error) {
+                              console.error('Error:', error);
+                              alert('Error al eliminar el borrador');
+                            }
                           }
                         }}
                         className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
@@ -1053,14 +1056,39 @@ const SocialPlanner = () => {
               {/* Botón Split con Dropdown */}
               <div className="relative">
                 <div className="flex gap-0 shadow-lg rounded-lg overflow-hidden">
-                  {/* Botón Principal */}
+                  {/* Botón Principal Inteligente */}
                   <button
-                    onClick={handlePublishNow}
+                    onClick={() => {
+                      // Si hay fecha y hora, programar. Si no, publicar ahora
+                      if (currentPost.scheduleDate && currentPost.scheduleTime) {
+                        handleSchedule();
+                      } else {
+                        handlePublishNow();
+                      }
+                    }}
                     disabled={loading || !currentPost.caption || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                     className="px-6 py-2.5 bg-[#0050cb] text-white font-semibold hover:bg-[#0f2842] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    <Send className="w-5 h-5" />
-                    {loading ? 'Publicando...' : 'Publicar Ahora'}
+                    {loading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        {currentPost.scheduleDate && currentPost.scheduleTime ? 'Programando...' : 'Publicando...'}
+                      </>
+                    ) : (
+                      <>
+                        {currentPost.scheduleDate && currentPost.scheduleTime ? (
+                          <>
+                            <Clock className="w-5 h-5" />
+                            Programar
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-5 h-5" />
+                            Publicar Ahora
+                          </>
+                        )}
+                      </>
+                    )}
                   </button>
 
                   {/* Botón Dropdown */}

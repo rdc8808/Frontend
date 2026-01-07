@@ -27,6 +27,7 @@ const SocialPlanner = () => {
   const [filterView, setFilterView] = useState(null); // 'all', 'scheduled', 'published', 'drafts'
   const [previewPlatform, setPreviewPlatform] = useState('facebook'); // 'facebook' or 'linkedin'
   const [showActionMenu, setShowActionMenu] = useState(false); // Para el dropdown del botón
+  const [showScheduleModal, setShowScheduleModal] = useState(false); // Para el modal de programación
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -844,35 +845,6 @@ const SocialPlanner = () => {
                       </label>
                     )}
                   </div>
-
-                  {/* Programación */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Programar (opcional)</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <input
-                          type="date"
-                          value={currentPost.scheduleDate}
-                          onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="time"
-                          value={currentPost.scheduleTime}
-                          onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    {currentPost.scheduleDate && currentPost.scheduleTime && (
-                      <div className="mt-2 text-xs text-[#05b7be] flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Programado para {currentPost.scheduleDate} a las {currentPost.scheduleTime}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -1056,37 +1028,21 @@ const SocialPlanner = () => {
               {/* Botón Split con Dropdown */}
               <div className="relative">
                 <div className="flex gap-0 shadow-lg rounded-lg overflow-hidden">
-                  {/* Botón Principal Inteligente */}
+                  {/* Botón Principal - Siempre dice "Publicar" */}
                   <button
-                    onClick={() => {
-                      // Si hay fecha y hora, programar. Si no, publicar ahora
-                      if (currentPost.scheduleDate && currentPost.scheduleTime) {
-                        handleSchedule();
-                      } else {
-                        handlePublishNow();
-                      }
-                    }}
+                    onClick={() => setShowActionMenu(!showActionMenu)}
                     disabled={loading || !currentPost.caption || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                     className="px-6 py-2.5 bg-[#0050cb] text-white font-semibold hover:bg-[#0f2842] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {loading ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        {currentPost.scheduleDate && currentPost.scheduleTime ? 'Programando...' : 'Publicando...'}
+                        Publicando...
                       </>
                     ) : (
                       <>
-                        {currentPost.scheduleDate && currentPost.scheduleTime ? (
-                          <>
-                            <Clock className="w-5 h-5" />
-                            Programar
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-5 h-5" />
-                            Publicar Ahora
-                          </>
-                        )}
+                        <Send className="w-5 h-5" />
+                        Publicar
                       </>
                     )}
                   </button>
@@ -1094,7 +1050,7 @@ const SocialPlanner = () => {
                   {/* Botón Dropdown */}
                   <button
                     onClick={() => setShowActionMenu(!showActionMenu)}
-                    disabled={loading || !currentPost.caption}
+                    disabled={loading || !currentPost.caption || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                     className="px-3 bg-[#0050cb] text-white hover:bg-[#0f2842] border-l border-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className={`w-4 h-4 transition-transform ${showActionMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1123,19 +1079,19 @@ const SocialPlanner = () => {
 
                     <button
                       onClick={() => {
-                        handleSchedule();
                         setShowActionMenu(false);
+                        setShowScheduleModal(true);
                       }}
-                      disabled={loading || !currentPost.scheduleDate || !currentPost.scheduleTime || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
+                      disabled={loading || (!currentPost.platforms.facebook && !currentPost.platforms.linkedin)}
                       className="w-full px-5 py-3 text-left hover:bg-gray-50 transition-colors flex items-start gap-3 border-b disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Clock className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-[#05b7be] mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 text-sm">Programar</div>
+                        <div className="font-semibold text-gray-900 text-sm">Programar Publicación</div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {currentPost.scheduleDate && currentPost.scheduleTime
-                            ? `Programado para ${currentPost.scheduleDate} a las ${currentPost.scheduleTime}`
-                            : 'Selecciona fecha y hora para programar'}
+                            ? `Programado: ${currentPost.scheduleDate} a las ${currentPost.scheduleTime}`
+                            : 'Elige fecha y hora para programar'}
                         </div>
                       </div>
                     </button>
@@ -1157,6 +1113,93 @@ const SocialPlanner = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Programación */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={() => setShowScheduleModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-[#0f2842]">Programar Publicación</h2>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Fecha */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#0f2842]">Fecha</label>
+                <input
+                  type="date"
+                  value={currentPost.scheduleDate}
+                  onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
+                />
+              </div>
+
+              {/* Hora */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#0f2842]">Hora</label>
+                <input
+                  type="time"
+                  value={currentPost.scheduleTime}
+                  onChange={(e) => setCurrentPost({...currentPost, scheduleTime: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#05b7be] focus:border-transparent"
+                />
+              </div>
+
+              {/* Resumen */}
+              {currentPost.scheduleDate && currentPost.scheduleTime && (
+                <div className="bg-[#05b7be]/10 border border-[#05b7be]/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-[#05b7be] mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-semibold text-[#0f2842]">Tu publicación se programará para:</div>
+                      <div className="text-sm text-gray-700 mt-1">
+                        {new Date(currentPost.scheduleDate).toLocaleDateString('es-PE', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })} a las {currentPost.scheduleTime}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Botones */}
+            <div className="border-t p-6 flex gap-3 justify-end">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!currentPost.scheduleDate || !currentPost.scheduleTime) {
+                    alert('Por favor, selecciona fecha y hora');
+                    return;
+                  }
+                  handleSchedule();
+                  setShowScheduleModal(false);
+                }}
+                disabled={!currentPost.scheduleDate || !currentPost.scheduleTime}
+                className="px-6 py-2.5 bg-[#05b7be] text-white font-semibold rounded-lg hover:bg-[#0050cb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Clock className="w-5 h-5" />
+                Programar
+              </button>
             </div>
           </div>
         </div>

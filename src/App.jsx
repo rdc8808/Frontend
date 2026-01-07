@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save } from 'lucide-react';
+import RubiconLogo from './assets/Rubicon-Core-Icon.png';
 
 const API_URL = 'https://social-planner-api.onrender.com';
 
@@ -17,10 +18,13 @@ const SocialPlanner = () => {
     media: null,
     platforms: { facebook: false, linkedin: false },
     scheduleDate: '',
-    scheduleTime: ''
+    scheduleTime: '',
+    status: 'draft', // 'draft', 'scheduled', 'published'
+    id: null
   });
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [filterView, setFilterView] = useState(null); // 'all', 'scheduled', 'published', 'drafts'
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -92,11 +96,21 @@ const SocialPlanner = () => {
 
   const loadPosts = async (email) => {
     try {
+      // Cargar desde localStorage primero
+      const localPosts = JSON.parse(localStorage.getItem(`posts_${email}`) || '[]');
+      setPosts(localPosts);
+
+      // Intentar sincronizar con el servidor
       const response = await fetch(`${API_URL}/api/posts?userId=${email}`);
       const data = await response.json();
-      setPosts(data);
+      if (data && Array.isArray(data)) {
+        setPosts(data);
+      }
     } catch (error) {
       console.error('Error:', error);
+      // Si falla la API, usar solo localStorage
+      const localPosts = JSON.parse(localStorage.getItem(`posts_${email}`) || '[]');
+      setPosts(localPosts);
     }
   };
 
@@ -111,26 +125,130 @@ const SocialPlanner = () => {
     }
   };
 
-  const handlePostNow = async () => {
+  const handlePublishNow = async () => {
+    if (!currentPost.caption) {
+      alert('Por favor, añade una descripción');
+      return;
+    }
+    if (!currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
+      alert('Por favor, selecciona al menos una plataforma');
+      return;
+    }
+    setLoading(true);
+    try {
+      const postData = {
+        ...currentPost,
+        status: 'published',
+        id: currentPost.id || Date.now(),
+        publishedAt: new Date().toISOString()
+      };
+
+      // Guardar en localStorage
+      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
+      if (currentPost.id) {
+        // Actualizar post existente
+        const index = userPosts.findIndex(p => p.id === currentPost.id);
+        if (index !== -1) userPosts[index] = postData;
+      } else {
+        // Nuevo post
+        userPosts.push(postData);
+      }
+      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
+
+      alert('¡Publicado con éxito!');
+      loadPosts(currentUser.email);
+      setShowComposer(false);
+      resetCurrentPost();
+    } catch (error) {
+      alert('Error al publicar');
+    }
+    setLoading(false);
+  };
+
+  const handleSchedule = async () => {
+    if (!currentPost.caption) {
+      alert('Por favor, añade una descripción');
+      return;
+    }
+    if (!currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
+      alert('Por favor, selecciona al menos una plataforma');
+      return;
+    }
+    if (!currentPost.scheduleDate || !currentPost.scheduleTime) {
+      alert('Por favor, selecciona fecha y hora para programar');
+      return;
+    }
+    setLoading(true);
+    try {
+      const postData = {
+        ...currentPost,
+        status: 'scheduled',
+        id: currentPost.id || Date.now()
+      };
+
+      // Guardar en localStorage
+      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
+      if (currentPost.id) {
+        const index = userPosts.findIndex(p => p.id === currentPost.id);
+        if (index !== -1) userPosts[index] = postData;
+      } else {
+        userPosts.push(postData);
+      }
+      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
+
+      alert('¡Publicación programada con éxito!');
+      loadPosts(currentUser.email);
+      setShowComposer(false);
+      resetCurrentPost();
+    } catch (error) {
+      alert('Error al programar');
+    }
+    setLoading(false);
+  };
+
+  const handleSaveDraft = async () => {
     if (!currentPost.caption) {
       alert('Por favor, añade una descripción');
       return;
     }
     setLoading(true);
     try {
-      await fetch(`${API_URL}/api/post-now`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.email, postData: currentPost })
-      });
-      alert('¡Publicado con éxito!');
+      const postData = {
+        ...currentPost,
+        status: 'draft',
+        id: currentPost.id || Date.now()
+      };
+
+      // Guardar en localStorage
+      const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
+      if (currentPost.id) {
+        const index = userPosts.findIndex(p => p.id === currentPost.id);
+        if (index !== -1) userPosts[index] = postData;
+      } else {
+        userPosts.push(postData);
+      }
+      localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(userPosts));
+
+      alert('¡Borrador guardado con éxito!');
       loadPosts(currentUser.email);
       setShowComposer(false);
-      setCurrentPost({ caption: '', media: null, platforms: { facebook: false, linkedin: false }, scheduleDate: '', scheduleTime: '' });
+      resetCurrentPost();
     } catch (error) {
-      alert('Error al publicar');
+      alert('Error al guardar borrador');
     }
     setLoading(false);
+  };
+
+  const resetCurrentPost = () => {
+    setCurrentPost({
+      caption: '',
+      media: null,
+      platforms: { facebook: false, linkedin: false },
+      scheduleDate: '',
+      scheduleTime: '',
+      status: 'draft',
+      id: null
+    });
   };
 
   const connectAccount = (platform) => {
@@ -140,7 +258,8 @@ const SocialPlanner = () => {
   const stats = {
     total: posts.length,
     scheduled: posts.filter(p => p.status === 'scheduled').length,
-    published: posts.filter(p => p.status === 'published').length
+    published: posts.filter(p => p.status === 'published').length,
+    drafts: posts.filter(p => p.status === 'draft').length
   };
 
   const getDaysInMonth = (date) => {
@@ -194,8 +313,8 @@ const SocialPlanner = () => {
         {/* Lado Izquierdo - Branding con el degradado de la empresa */}
         <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#05b7be] to-[#0050cb] text-white p-12 flex-col justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6" />
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center p-1">
+              <img src={RubiconLogo} alt="Rubicon Core" className="w-full h-full object-contain" />
             </div>
             <span className="text-2xl font-bold">Rubicon Core</span>
           </div>
@@ -268,8 +387,8 @@ const SocialPlanner = () => {
       <div className="w-64 bg-white border-r flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#05b7be] to-[#0050cb] rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#05b7be] to-[#0050cb] rounded-lg flex items-center justify-center p-1.5">
+              <img src={RubiconLogo} alt="Rubicon Core" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="font-bold text-[#0f2842]">Rubicon Core</div>
@@ -288,6 +407,13 @@ const SocialPlanner = () => {
           </button>
           <button onClick={() => setCurrentPage('calendar')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'calendar' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
             <Calendar className="w-5 h-5" />Calendario
+          </button>
+          <button onClick={() => setCurrentPage('drafts')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'drafts' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
+            <FileText className="w-5 h-5" />
+            <span className="flex-1 text-left">Borradores</span>
+            {stats.drafts > 0 && (
+              <span className="bg-[#05b7be] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
+            )}
           </button>
           <button onClick={() => setCurrentPage('connections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'connections' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
@@ -318,19 +444,19 @@ const SocialPlanner = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2 text-[#0f2842]">Panel de Control</h1>
             <p className="text-gray-600 mb-8">¡Bienvenido de nuevo! Aquí tienes un resumen de tu contenido.</p>
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg p-6 border shadow-sm">
+            <div className="grid grid-cols-4 gap-6 mb-8">
+              <button onClick={() => setFilterView('all')} className="bg-white rounded-lg p-6 border shadow-sm hover:shadow-md transition-all hover:border-[#0050cb] text-left">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-6 h-6 text-[#0050cb]" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-500 font-medium">Total de Publicaciones</div>
+                    <div className="text-sm text-gray-500 font-medium">Total</div>
                     <div className="text-2xl font-bold text-[#0f2842]">{stats.total}</div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-lg p-6 border shadow-sm">
+              </button>
+              <button onClick={() => setFilterView('scheduled')} className="bg-white rounded-lg p-6 border shadow-sm hover:shadow-md transition-all hover:border-orange-500 text-left">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
                     <Clock className="w-6 h-6 text-orange-600" />
@@ -340,8 +466,8 @@ const SocialPlanner = () => {
                     <div className="text-2xl font-bold text-[#0f2842]">{stats.scheduled}</div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-lg p-6 border shadow-sm">
+              </button>
+              <button onClick={() => setFilterView('published')} className="bg-white rounded-lg p-6 border shadow-sm hover:shadow-md transition-all hover:border-green-500 text-left">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                     <Send className="w-6 h-6 text-green-600" />
@@ -351,16 +477,165 @@ const SocialPlanner = () => {
                     <div className="text-2xl font-bold text-[#0f2842]">{stats.published}</div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg p-12 text-center border dashed">
-              <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No hay publicaciones programadas</h3>
-              <p className="text-gray-500 mb-6">Crea tu primera publicación para empezar a gestionar tus redes.</p>
-              <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#05b7be] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
-                <Plus className="w-5 h-5" />Crear Publicación
+              </button>
+              <button onClick={() => setFilterView('drafts')} className="bg-white rounded-lg p-6 border shadow-sm hover:shadow-md transition-all hover:border-purple-500 text-left">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500 font-medium">Borradores</div>
+                    <div className="text-2xl font-bold text-[#0f2842]">{stats.drafts}</div>
+                  </div>
+                </div>
               </button>
             </div>
+            {/* Vista filtrada de publicaciones */}
+            {filterView ? (
+              <div className="bg-white rounded-lg border shadow-sm">
+                <div className="p-6 border-b flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-[#0f2842]">
+                    {filterView === 'all' && 'Todas las Publicaciones'}
+                    {filterView === 'scheduled' && 'Publicaciones Programadas'}
+                    {filterView === 'published' && 'Publicaciones Realizadas'}
+                    {filterView === 'drafts' && 'Borradores'}
+                  </h2>
+                  <button onClick={() => setFilterView(null)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6">
+                  {(() => {
+                    const filteredPosts = filterView === 'all'
+                      ? posts
+                      : filterView === 'drafts'
+                      ? posts.filter(p => p.status === 'draft')
+                      : posts.filter(p => p.status === filterView);
+
+                    if (filteredPosts.length === 0) {
+                      return (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FileText className="w-8 h-8 text-gray-300" />
+                          </div>
+                          <p className="text-gray-500">No hay publicaciones en esta categoría</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid gap-4">
+                        {filteredPosts.map(post => (
+                          <div key={post.id} className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer" onClick={() => {
+                            setCurrentPost(post);
+                            setShowComposer(true);
+                          }}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex gap-2">
+                                {post.platforms.facebook && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Facebook className="w-4 h-4 text-blue-600" /></div>}
+                                {post.platforms.linkedin && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Linkedin className="w-4 h-4 text-blue-700" /></div>}
+                              </div>
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                post.status === 'published' ? 'bg-green-100 text-green-700' :
+                                post.status === 'scheduled' ? 'bg-orange-100 text-orange-700' :
+                                'bg-purple-100 text-purple-700'
+                              }`}>
+                                {post.status === 'published' ? 'Publicada' : post.status === 'scheduled' ? 'Programada' : 'Borrador'}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 line-clamp-2 mb-2">{post.caption}</p>
+                            {post.scheduleDate && (
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Clock className="w-4 h-4" />
+                                <span>{post.scheduleDate} {post.scheduleTime}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg p-12 text-center border dashed">
+                <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Vista rápida de tus publicaciones</h3>
+                <p className="text-gray-500 mb-6">Haz clic en cualquiera de las tarjetas de arriba para ver tus publicaciones.</p>
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#05b7be] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                  <Plus className="w-5 h-5" />Crear Publicación
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentPage === 'drafts' && (
+          <div>
+            <h1 className="text-3xl font-bold mb-2 text-[#0f2842]">Borradores</h1>
+            <p className="text-gray-600 mb-8">Edita y publica tus borradores guardados</p>
+            {posts.filter(p => p.status === 'draft').length === 0 ? (
+              <div className="bg-white rounded-lg p-12 text-center border">
+                <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No tienes borradores guardados</h3>
+                <p className="text-gray-500 mb-6">Los borradores te permiten guardar publicaciones y editarlas más tarde.</p>
+                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#05b7be] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                  <Plus className="w-5 h-5" />Crear Publicación
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {posts.filter(p => p.status === 'draft').map(post => (
+                  <div key={post.id} className="bg-white border rounded-lg p-6 hover:shadow-md transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex gap-2">
+                        {post.platforms.facebook && (
+                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <Facebook className="w-5 h-5 text-blue-600" />
+                          </div>
+                        )}
+                        {post.platforms.linkedin && (
+                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <Linkedin className="w-5 h-5 text-blue-700" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+                        Borrador
+                      </span>
+                    </div>
+                    <p className="text-gray-700 mb-4">{post.caption}</p>
+                    {post.media && (
+                      <img src={post.media} alt="Preview" className="w-full h-48 object-cover rounded-lg mb-4" />
+                    )}
+                    <div className="flex gap-3 pt-4 border-t">
+                      <button
+                        onClick={() => {
+                          setCurrentPost(post);
+                          setShowComposer(true);
+                        }}
+                        className="flex-1 px-4 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors font-medium"
+                      >
+                        Editar y Publicar
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('¿Estás seguro de eliminar este borrador?')) {
+                            const userPosts = JSON.parse(localStorage.getItem(`posts_${currentUser.email}`) || '[]');
+                            const filtered = userPosts.filter(p => p.id !== post.id);
+                            localStorage.setItem(`posts_${currentUser.email}`, JSON.stringify(filtered));
+                            loadPosts(currentUser.email);
+                          }
+                        }}
+                        className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -522,9 +797,38 @@ const SocialPlanner = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setShowComposer(false)} className="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-lg">Cancelar</button>
-                <button onClick={handlePostNow} disabled={loading} className="flex-[2] bg-[#0050cb] text-white py-3 rounded-lg hover:bg-[#0f2842] transition-colors flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-200">
-                  <Send className="w-5 h-5" />{loading ? 'Publicando...' : 'Publicar Ahora'}
+                <button
+                  onClick={() => {
+                    setShowComposer(false);
+                    resetCurrentPost();
+                  }}
+                  className="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-lg border"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={loading}
+                  className="flex-1 bg-purple-50 text-purple-700 border-2 border-purple-200 py-3 rounded-lg hover:bg-purple-100 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                >
+                  <Save className="w-5 h-5" />
+                  {loading ? 'Guardando...' : 'Guardar Borrador'}
+                </button>
+                <button
+                  onClick={handleSchedule}
+                  disabled={loading}
+                  className="flex-1 bg-orange-50 text-orange-700 border-2 border-orange-200 py-3 rounded-lg hover:bg-orange-100 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                >
+                  <Clock className="w-5 h-5" />
+                  {loading ? 'Programando...' : 'Programar'}
+                </button>
+                <button
+                  onClick={handlePublishNow}
+                  disabled={loading}
+                  className="flex-1 bg-[#0050cb] text-white py-3 rounded-lg hover:bg-[#0f2842] transition-colors flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-200 disabled:opacity-50"
+                >
+                  <Send className="w-5 h-5" />
+                  {loading ? 'Publicando...' : 'Publicar Ahora'}
                 </button>
               </div>
             </div>

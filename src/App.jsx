@@ -50,40 +50,61 @@ const SocialPlanner = () => {
     }
   }, []);
 
-  const handleAuth = (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
+
     if (authMode === 'signup') {
-      if (!authForm.fullName || !authForm.email || !authForm.password) {
-        alert('Por favor, completa todos los campos');
-        return;
+      // Registration
+      try {
+        const response = await fetch(`${API_URL}/api/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: authForm.fullName,
+            email: authForm.email,
+            password: authForm.password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('¡Cuenta creada! Por favor, inicia sesión.');
+          setAuthMode('signin');
+          setAuthForm({ fullName: '', email: '', password: '' });
+        } else {
+          alert(data.error || 'Error al registrar usuario');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        alert('Error al conectar con el servidor');
       }
-      // Validar dominio de correo corporativo
-      const allowedDomains = ['@corebusinesscorp.com', '@rubicondigitalcorp.com'];
-      const emailDomain = authForm.email.substring(authForm.email.indexOf('@'));
-      if (!allowedDomains.includes(emailDomain)) {
-        alert('Error. Solo se permiten correos corporativos');
-        return;
-      }
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      if (users.find(u => u.email === authForm.email)) {
-        alert('El correo electrónico ya existe');
-        return;
-      }
-      users.push(authForm);
-      localStorage.setItem('users', JSON.stringify(users));
-      alert('¡Cuenta creada! Por favor, inicia sesión.');
-      setAuthMode('signin');
     } else {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find(u => u.email === authForm.email && u.password === authForm.password);
-      if (user) {
-        setCurrentUser(user);
-        setIsAuthenticated(true);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        loadPosts(user.email);
-        checkConnections(user.email);
-      } else {
-        alert('Credenciales inválidas');
+      // Login
+      try {
+        const response = await fetch(`${API_URL}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: authForm.email,
+            password: authForm.password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setCurrentUser(data.user);
+          setIsAuthenticated(true);
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+          loadPosts(data.user.email);
+          checkConnections(data.user.email);
+        } else {
+          alert(data.error || 'Credenciales inválidas');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('Error al conectar con el servidor');
       }
     }
   };
@@ -876,7 +897,7 @@ const SocialPlanner = () => {
               </div>
               <div className="bg-white rounded-lg p-6 border shadow-sm">
                 <h3 className="font-semibold text-lg mb-4">Cambiar Contraseña</h3>
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                   e.preventDefault();
                   const currentPassword = e.target.currentPassword.value;
                   const newPassword = e.target.newPassword.value;
@@ -884,11 +905,6 @@ const SocialPlanner = () => {
 
                   if (!currentPassword || !newPassword || !confirmPassword) {
                     alert('Por favor, completa todos los campos');
-                    return;
-                  }
-
-                  if (currentPassword !== currentUser.password) {
-                    alert('La contraseña actual es incorrecta');
                     return;
                   }
 
@@ -902,21 +918,31 @@ const SocialPlanner = () => {
                     return;
                   }
 
-                  // Update password
-                  const users = JSON.parse(localStorage.getItem('users') || '[]');
-                  const userIndex = users.findIndex(u => u.email === currentUser.email);
-                  if (userIndex !== -1) {
-                    users[userIndex].password = newPassword;
-                    localStorage.setItem('users', JSON.stringify(users));
+                  try {
+                    const response = await fetch(`${API_URL}/api/update-password`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        email: currentUser.email,
+                        currentPassword,
+                        newPassword
+                      })
+                    });
 
-                    const updatedUser = {...currentUser, password: newPassword};
-                    setCurrentUser(updatedUser);
-                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    const data = await response.json();
 
-                    alert('¡Contraseña actualizada exitosamente!');
-                    e.target.reset();
-                  } else {
-                    alert('Error al actualizar la contraseña');
+                    if (response.ok) {
+                      const updatedUser = data.user;
+                      setCurrentUser(updatedUser);
+                      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                      alert('¡Contraseña actualizada exitosamente!');
+                      e.target.reset();
+                    } else {
+                      alert(data.error || 'Error al actualizar la contraseña');
+                    }
+                  } catch (error) {
+                    console.error('Password update error:', error);
+                    alert('Error al conectar con el servidor');
                   }
                 }} className="space-y-4">
                   <div>

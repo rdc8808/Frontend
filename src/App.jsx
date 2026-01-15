@@ -33,6 +33,7 @@ const SocialPlanner = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(false); // Modal para enviar para aprobación
   const [approvalData, setApprovalData] = useState({ approverId: '', note: '' }); // Datos de aprobación
   const [pendingApprovals, setPendingApprovals] = useState([]); // Posts pendientes de aprobación
+  const [newUserForm, setNewUserForm] = useState({ fullName: '', email: '', password: '', role: 'collaborator' }); // Formulario de nuevo usuario
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -315,6 +316,47 @@ const SocialPlanner = () => {
       }
     } catch (error) {
       console.error('Reject post error:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+
+    if (!newUserForm.fullName || !newUserForm.email || !newUserForm.password) {
+      alert('Por favor, completa todos los campos');
+      return;
+    }
+
+    if (newUserForm.password.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/create-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: newUserForm.fullName,
+          email: newUserForm.email,
+          password: newUserForm.password,
+          role: newUserForm.role,
+          adminKey: 'rubicon2026admin'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message || '¡Usuario creado exitosamente!');
+        setNewUserForm({ fullName: '', email: '', password: '', role: 'collaborator' });
+        loadAllUsers(); // Reload users list
+      } else {
+        alert(data.error || 'Error al crear usuario');
+      }
+    } catch (error) {
+      console.error('Create user error:', error);
       alert('Error al conectar con el servidor');
     }
   };
@@ -1267,11 +1309,74 @@ const SocialPlanner = () => {
                 </form>
               </div>
 
+              {/* Crear Nuevo Usuario - Solo Admin */}
+              {currentUser?.role === 'admin' && (
+                <div className="bg-white rounded-lg p-6 border shadow-sm">
+                  <h3 className="font-semibold text-lg mb-4">Crear Nuevo Usuario</h3>
+                  <form onSubmit={handleCreateUser} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-[#606060]">Nombre Completo</label>
+                        <input
+                          type="text"
+                          value={newUserForm.fullName}
+                          onChange={(e) => setNewUserForm({ ...newUserForm, fullName: e.target.value })}
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                          placeholder="Ej: Juan Pérez"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-[#606060]">Correo Corporativo</label>
+                        <input
+                          type="email"
+                          value={newUserForm.email}
+                          onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                          placeholder="usuario@corebusinesscorp.com"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-[#606060]">Contraseña</label>
+                        <input
+                          type="text"
+                          value={newUserForm.password}
+                          onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-[#606060]">Rol</label>
+                        <select
+                          value={newUserForm.role}
+                          onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                        >
+                          <option value="collaborator">Colaborador</option>
+                          <option value="admin">Administrador</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      Crear Usuario
+                    </button>
+                    <p className="text-xs text-gray-500">
+                      💡 El usuario recibirá sus credenciales y podrá acceder con el email y contraseña proporcionados.
+                    </p>
+                  </form>
+                </div>
+              )}
+
               {/* Gestión de Usuarios - Solo visible para Admin */}
               {currentUser?.role === 'admin' && (
                 <div className="bg-white rounded-lg p-6 border shadow-sm">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-lg">Gestión de Usuarios</h3>
+                    <h3 className="font-semibold text-lg">Lista de Usuarios</h3>
                     <button
                       onClick={loadAllUsers}
                       className="text-sm px-4 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors"

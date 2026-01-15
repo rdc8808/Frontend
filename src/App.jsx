@@ -555,7 +555,7 @@ const SocialPlanner = () => {
       scheduleDate: '',
       scheduleTime: '',
       status: 'draft',
-      id: null
+      id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID
     });
   };
 
@@ -783,7 +783,10 @@ const SocialPlanner = () => {
           </div>
         </div>
         <div className="p-4">
-          <button onClick={() => setShowComposer(true)} className="w-full bg-[#0050cb] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
+          <button onClick={() => {
+            resetCurrentPost();
+            setShowComposer(true);
+          }} className="w-full bg-[#0050cb] text-white px-4 py-3 rounded-lg hover:bg-[#0050cb] transition-colors flex items-center justify-center gap-2 font-medium">
             <Plus className="w-5 h-5" />Crear Publicación
           </button>
         </div>
@@ -1005,7 +1008,10 @@ const SocialPlanner = () => {
                 <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Vista rápida de tus publicaciones</h3>
                 <p className="text-gray-500 mb-6">Haz clic en cualquiera de las tarjetas de arriba para ver tus publicaciones.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => {
+                  resetCurrentPost();
+                  setShowComposer(true);
+                }} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>
@@ -1022,7 +1028,10 @@ const SocialPlanner = () => {
                 <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No tienes borradores guardados</h3>
                 <p className="text-gray-500 mb-6">Los borradores te permiten guardar publicaciones y editarlas más tarde.</p>
-                <button onClick={() => setShowComposer(true)} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
+                <button onClick={() => {
+                  resetCurrentPost();
+                  setShowComposer(true);
+                }} className="px-6 py-3 bg-[#0050cb] text-white rounded-lg hover:bg-[#0050cb] transition-colors inline-flex items-center gap-2">
                   <Plus className="w-5 h-5" />Crear Publicación
                 </button>
               </div>

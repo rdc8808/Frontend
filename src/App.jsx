@@ -32,7 +32,8 @@ const SocialPlanner = () => {
   const [allUsers, setAllUsers] = useState([]); // Lista de todos los usuarios (solo admin)
   const [showApprovalModal, setShowApprovalModal] = useState(false); // Modal para enviar para aprobación
   const [approvalData, setApprovalData] = useState({ approverId: '', note: '' }); // Datos de aprobación
-  const [pendingApprovals, setPendingApprovals] = useState([]); // Posts pendientes de aprobación
+  const [pendingApprovals, setPendingApprovals] = useState([]); // Posts pendientes de aprobación (para admin)
+  const [myPendingApprovals, setMyPendingApprovals] = useState([]); // Mis posts pendientes (para colaborador)
   const [newUserForm, setNewUserForm] = useState({ fullName: '', email: '', password: '', role: 'collaborator' }); // Formulario de nuevo usuario
 
   // Colores de la marca Core Business Corp
@@ -52,6 +53,13 @@ const SocialPlanner = () => {
       setIsAuthenticated(true);
       loadPosts(user.email);
       checkConnections(user.email);
+
+      // Load pending approvals based on role
+      if (user.role === 'admin') {
+        loadPendingApprovals(user.email);
+      } else if (user.role === 'collaborator') {
+        loadMyPendingApprovals(user.email);
+      }
     }
 
     // Handle OAuth callback from LinkedIn/Facebook
@@ -205,9 +213,10 @@ const SocialPlanner = () => {
     }
   };
 
-  const loadPendingApprovals = async () => {
+  const loadPendingApprovals = async (userEmail = currentUser?.email) => {
+    if (!userEmail) return;
     try {
-      const response = await fetch(`${API_URL}/api/posts/pending-approval?userId=${currentUser.email}`);
+      const response = await fetch(`${API_URL}/api/posts/pending-approval?userId=${userEmail}`);
       if (!response.ok) throw new Error('Error al cargar aprobaciones');
 
       const data = await response.json();
@@ -215,6 +224,20 @@ const SocialPlanner = () => {
     } catch (error) {
       console.error('Error al cargar aprobaciones:', error);
       setPendingApprovals([]);
+    }
+  };
+
+  const loadMyPendingApprovals = async (userEmail = currentUser?.email) => {
+    if (!userEmail) return;
+    try {
+      const response = await fetch(`${API_URL}/api/posts/my-pending-approvals?userId=${userEmail}`);
+      if (!response.ok) throw new Error('Error al cargar mis aprobaciones');
+
+      const data = await response.json();
+      setMyPendingApprovals(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al cargar mis aprobaciones:', error);
+      setMyPendingApprovals([]);
     }
   };
 
@@ -254,6 +277,7 @@ const SocialPlanner = () => {
         setApprovalData({ approverId: '', note: '' });
         resetCurrentPost();
         loadPosts(currentUser.email);
+        loadMyPendingApprovals(); // Reload collaborator's pending posts
       } else {
         alert(data.error || 'Error al enviar para aprobación');
       }
@@ -792,6 +816,48 @@ const SocialPlanner = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2 text-[#0f2842]">Panel de Control</h1>
             <p className="text-gray-600 mb-8">¡Bienvenido de nuevo! Aquí tienes un resumen de tu contenido.</p>
+
+            {/* Card for Collaborator's Pending Approvals */}
+            {currentUser?.role === 'collaborator' && myPendingApprovals.length > 0 && (
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 mb-6 border-2 border-blue-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#0f2842]">Publicaciones en Espera de Aprobación</h3>
+                    <p className="text-sm text-gray-600">Tienes {myPendingApprovals.length} publicación(es) pendiente(s)</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {myPendingApprovals.map(post => (
+                    <div key={post.id} className="bg-white rounded-lg p-4 border shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex gap-2">
+                          {post.platforms?.facebook && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Facebook className="w-4 h-4 text-blue-600" /></div>}
+                          {post.platforms?.linkedin && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Linkedin className="w-4 h-4 text-blue-700" /></div>}
+                        </div>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          post.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' :
+                          post.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {post.status === 'pending_approval' ? 'Esperando aprobación' :
+                           post.status === 'rejected' ? 'Rechazada' : post.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-800 mb-2 line-clamp-2">{post.caption}</p>
+                      {post.scheduleDate && <p className="text-xs text-gray-500">Programado: {post.scheduleDate} {post.scheduleTime}</p>}
+                      {post.status === 'rejected' && post.approvalStatus?.rejectedReason && (
+                        <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                          <p className="text-xs text-red-700"><strong>Motivo:</strong> {post.approvalStatus.rejectedReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 gap-6 mb-8">
               <button onClick={() => setFilterView('all')} className="bg-white rounded-lg p-6 border shadow-sm hover:shadow-md transition-all hover:border-[#0050cb] text-left">
                 <div className="flex items-center gap-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save, CheckCircle } from 'lucide-react';
+import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save, CheckCircle, Trash2 } from 'lucide-react';
 import RubiconLogo from './assets/Rubicon-Core-Icon.png';
 import CBCLogo from './assets/logocbc.png';
 
@@ -209,6 +209,35 @@ const SocialPlanner = () => {
       }
     } catch (error) {
       console.error('Update role error:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+
+  const deleteUser = async (email, fullName) => {
+    if (!confirm(`¿Estás seguro que deseas eliminar al usuario ${fullName}?\n\nEsta acción no se puede deshacer y eliminará:\n- La cuenta del usuario\n- Todas sus publicaciones\n- Sus conexiones a redes sociales`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/delete-user`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailToDelete: email,
+          adminKey: 'rubicon2026admin'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Usuario ${fullName} eliminado exitosamente`);
+        loadAllUsers(); // Reload users list
+      } else {
+        alert(data.error || 'Error al eliminar usuario');
+      }
+    } catch (error) {
+      console.error('Delete user error:', error);
       alert('Error al conectar con el servidor');
     }
   };
@@ -1469,14 +1498,23 @@ const SocialPlanner = () => {
                               {user.role === 'admin' ? 'Administrador' : 'Colaborador'}
                             </span>
                             {user.email !== currentUser.email && (
-                              <select
-                                value={user.role}
-                                onChange={(e) => updateUserRole(user.email, e.target.value)}
-                                className="px-3 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-[#0050cb] outline-none"
-                              >
-                                <option value="admin">Administrador</option>
-                                <option value="collaborator">Colaborador</option>
-                              </select>
+                              <>
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => updateUserRole(user.email, e.target.value)}
+                                  className="px-3 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-[#0050cb] outline-none"
+                                >
+                                  <option value="admin">Administrador</option>
+                                  <option value="collaborator">Colaborador</option>
+                                </select>
+                                <button
+                                  onClick={() => deleteUser(user.email, user.fullName)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Eliminar usuario"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
                             )}
                             {user.email === currentUser.email && (
                               <span className="text-xs text-gray-400">(Tú)</span>

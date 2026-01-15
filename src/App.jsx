@@ -29,6 +29,7 @@ const SocialPlanner = () => {
   const [previewPlatform, setPreviewPlatform] = useState('facebook'); // 'facebook' or 'linkedin'
   const [showActionMenu, setShowActionMenu] = useState(false); // Para el dropdown del botón
   const [showScheduleModal, setShowScheduleModal] = useState(false); // Para el modal de programación
+  const [allUsers, setAllUsers] = useState([]); // Lista de todos los usuarios (solo admin)
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -158,6 +159,45 @@ const SocialPlanner = () => {
     } catch (error) {
       console.error('Error al cargar posts:', error);
       setPosts([]);
+    }
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/users`);
+      if (!response.ok) throw new Error('Error al cargar usuarios');
+
+      const data = await response.json();
+      setAllUsers(data.users || []);
+    } catch (error) {
+      console.error('Error al cargar usuarios:', error);
+      setAllUsers([]);
+    }
+  };
+
+  const updateUserRole = async (email, newRole) => {
+    try {
+      const response = await fetch(`${API_URL}/api/users/update-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          role: newRole,
+          adminKey: 'rubicon2026admin'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Rol actualizado exitosamente para ${email}`);
+        loadAllUsers(); // Reload users list
+      } else {
+        alert(data.error || 'Error al actualizar rol');
+      }
+    } catch (error) {
+      console.error('Update role error:', error);
+      alert('Error al conectar con el servidor');
     }
   };
 
@@ -989,6 +1029,57 @@ const SocialPlanner = () => {
                   <button type="submit" className="px-6 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors font-medium">Actualizar Contraseña</button>
                 </form>
               </div>
+
+              {/* Gestión de Usuarios - Solo visible para Admin */}
+              {currentUser?.role === 'admin' && (
+                <div className="bg-white rounded-lg p-6 border shadow-sm">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-lg">Gestión de Usuarios</h3>
+                    <button
+                      onClick={loadAllUsers}
+                      className="text-sm px-4 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors"
+                    >
+                      Recargar Lista
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {allUsers.length === 0 ? (
+                      <p className="text-gray-500 text-sm">Haz clic en "Recargar Lista" para ver todos los usuarios</p>
+                    ) : (
+                      allUsers.map(user => (
+                        <div key={user.email} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="font-medium text-[#0f2842]">{user.fullName}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'admin'
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {user.role === 'admin' ? 'Administrador' : 'Colaborador'}
+                            </span>
+                            {user.email !== currentUser.email && (
+                              <select
+                                value={user.role}
+                                onChange={(e) => updateUserRole(user.email, e.target.value)}
+                                className="px-3 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-[#0050cb] outline-none"
+                              >
+                                <option value="admin">Administrador</option>
+                                <option value="collaborator">Colaborador</option>
+                              </select>
+                            )}
+                            {user.email === currentUser.email && (
+                              <span className="text-xs text-gray-400">(Tú)</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

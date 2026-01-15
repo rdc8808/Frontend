@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save } from 'lucide-react';
+import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save, CheckCircle } from 'lucide-react';
 import RubiconLogo from './assets/Rubicon-Core-Icon.png';
 import CBCLogo from './assets/logocbc.png';
 
@@ -30,6 +30,9 @@ const SocialPlanner = () => {
   const [showActionMenu, setShowActionMenu] = useState(false); // Para el dropdown del botón
   const [showScheduleModal, setShowScheduleModal] = useState(false); // Para el modal de programación
   const [allUsers, setAllUsers] = useState([]); // Lista de todos los usuarios (solo admin)
+  const [showApprovalModal, setShowApprovalModal] = useState(false); // Modal para enviar para aprobación
+  const [approvalData, setApprovalData] = useState({ approverId: '', note: '' }); // Datos de aprobación
+  const [pendingApprovals, setPendingApprovals] = useState([]); // Posts pendientes de aprobación
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -197,6 +200,121 @@ const SocialPlanner = () => {
       }
     } catch (error) {
       console.error('Update role error:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+
+  const loadPendingApprovals = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/posts/pending-approval?userId=${currentUser.email}`);
+      if (!response.ok) throw new Error('Error al cargar aprobaciones');
+
+      const data = await response.json();
+      setPendingApprovals(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al cargar aprobaciones:', error);
+      setPendingApprovals([]);
+    }
+  };
+
+  const handleSendForApproval = async () => {
+    if (!currentPost.caption) {
+      alert('Por favor, añade una descripción');
+      return;
+    }
+    if (!currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
+      alert('Por favor, selecciona al menos una plataforma');
+      return;
+    }
+    if (!approvalData.approverId) {
+      alert('Por favor, selecciona un aprobador');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/posts/send-for-approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          postData: currentPost,
+          approverId: approvalData.approverId,
+          note: approvalData.note
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('¡Post enviado para aprobación!');
+        setShowApprovalModal(false);
+        setShowComposer(false);
+        setApprovalData({ approverId: '', note: '' });
+        resetCurrentPost();
+        loadPosts(currentUser.email);
+      } else {
+        alert(data.error || 'Error al enviar para aprobación');
+      }
+    } catch (error) {
+      console.error('Send for approval error:', error);
+      alert('Error al conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprovePost = async (postId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/posts/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          approverId: currentUser.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('¡Post aprobado y programado!');
+        loadPendingApprovals();
+        loadPosts(currentUser.email);
+      } else {
+        alert(data.error || 'Error al aprobar post');
+      }
+    } catch (error) {
+      console.error('Approve post error:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+
+  const handleRejectPost = async (postId) => {
+    const reason = prompt('¿Por qué rechazas este post? (opcional)');
+
+    try {
+      const response = await fetch(`${API_URL}/api/posts/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          approverId: currentUser.email,
+          reason
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Post rechazado');
+        loadPendingApprovals();
+        loadPosts(currentUser.email);
+      } else {
+        alert(data.error || 'Error al rechazar post');
+      }
+    } catch (error) {
+      console.error('Reject post error:', error);
       alert('Error al conectar con el servidor');
     }
   };
@@ -588,6 +706,21 @@ const SocialPlanner = () => {
               <span className="bg-[#0050cb] text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.drafts}</span>
             )}
           </button>
+          {currentUser?.role === 'admin' && (
+            <button
+              onClick={() => {
+                setCurrentPage('approvals');
+                loadPendingApprovals();
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'approvals' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}
+            >
+              <CheckCircle className="w-5 h-5" />
+              <span className="flex-1 text-left">Aprobaciones</span>
+              {pendingApprovals.length > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{pendingApprovals.length}</span>
+              )}
+            </button>
+          )}
           <button onClick={() => setCurrentPage('connections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${currentPage === 'connections' ? 'bg-[#d9e8fc] text-[#0050cb]' : 'text-[#606060] hover:bg-gray-50'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             Conexiones
@@ -943,6 +1076,110 @@ const SocialPlanner = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {currentPage === 'approvals' && currentUser?.role === 'admin' && (
+          <div>
+            <h1 className="text-3xl font-bold mb-2 text-[#0f2842]">Aprobaciones Pendientes</h1>
+            <p className="text-gray-600 mb-8">Revisa y aprueba publicaciones solicitadas por colaboradores</p>
+
+            {pendingApprovals.length === 0 ? (
+              <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
+                <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay aprobaciones pendientes</h3>
+                <p className="text-gray-500">Todas las publicaciones han sido revisadas</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingApprovals.map(post => (
+                  <div key={post.id} className="bg-white rounded-lg p-6 border shadow-sm">
+                    <div className="flex gap-6">
+                      {/* Preview */}
+                      <div className="w-1/3">
+                        {post.media ? (
+                          post.media.startsWith('data:video') ? (
+                            <video src={post.media} controls className="w-full rounded-lg" />
+                          ) : (
+                            <img src={post.media} alt="Post media" className="w-full rounded-lg object-cover" />
+                          )
+                        ) : (
+                          <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <FileText className="w-8 h-8 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-medium text-gray-600">Solicitado por:</span>
+                              <span className="text-sm font-semibold text-[#0f2842]">{post.approvalStatus.requestedBy}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(post.approvalStatus.requestedAt).toLocaleString('es-ES')}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {post.platforms.facebook && (
+                              <div className="bg-blue-100 p-2 rounded">
+                                <Facebook className="w-4 h-4 text-blue-600" />
+                              </div>
+                            )}
+                            {post.platforms.linkedin && (
+                              <div className="bg-blue-100 p-2 rounded">
+                                <Linkedin className="w-4 h-4 text-blue-700" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Caption */}
+                        <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{post.caption}</p>
+                        </div>
+
+                        {/* Schedule Info */}
+                        {post.scheduleDate && post.scheduleTime && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                            <Clock className="w-4 h-4" />
+                            <span>Programado para: {post.scheduleDate} a las {post.scheduleTime}</span>
+                          </div>
+                        )}
+
+                        {/* Note */}
+                        {post.approvalStatus.note && (
+                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-3">
+                            <div className="text-xs font-semibold text-yellow-800 mb-1">Nota del colaborador:</div>
+                            <p className="text-sm text-yellow-700">{post.approvalStatus.note}</p>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-3">
+                          <button
+                            onClick={() => handleApprovePost(post.id)}
+                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Aprobar y Programar
+                          </button>
+                          <button
+                            onClick={() => handleRejectPost(post.id)}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2"
+                          >
+                            <X className="w-4 h-4" />
+                            Rechazar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1439,6 +1676,22 @@ const SocialPlanner = () => {
 
                     <button
                       onClick={() => {
+                        setShowApprovalModal(true);
+                        setShowActionMenu(false);
+                        loadAllUsers(); // Load admin users
+                      }}
+                      disabled={loading || !currentPost.platforms.facebook && !currentPost.platforms.linkedin}
+                      className="w-full px-5 py-3 text-left hover:bg-gray-50 transition-colors flex items-start gap-3 border-b disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FileText className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold text-gray-900 text-sm">Enviar para Aprobación</div>
+                        <div className="text-xs text-gray-500 mt-0.5">Solicita aprobación de un administrador antes de publicar</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         handleSaveDraft();
                         setShowActionMenu(false);
                       }}
@@ -1550,6 +1803,103 @@ const SocialPlanner = () => {
                 <Clock className="w-5 h-5" />
                 Programar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Enviar para Aprobación */}
+      {showApprovalModal && (
+        <div className="fixed inset-0 bg-[#0f2842] bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-[#0f2842]">Enviar para Aprobación</h3>
+              <button
+                onClick={() => {
+                  setShowApprovalModal(false);
+                  setApprovalData({ approverId: '', note: '' });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Selector de Aprobador */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
+                  Seleccionar Aprobador <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={approvalData.approverId}
+                  onChange={(e) => setApprovalData({ ...approvalData, approverId: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                >
+                  <option value="">Selecciona un administrador</option>
+                  {allUsers.filter(u => u.role === 'admin').map(user => (
+                    <option key={user.email} value={user.email}>
+                      {user.fullName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fecha y Hora Programada */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[#606060]">Fecha Deseada</label>
+                  <input
+                    type="date"
+                    value={currentPost.scheduleDate}
+                    onChange={(e) => setCurrentPost({ ...currentPost, scheduleDate: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[#606060]">Hora Deseada</label>
+                  <input
+                    type="time"
+                    value={currentPost.scheduleTime}
+                    onChange={(e) => setCurrentPost({ ...currentPost, scheduleTime: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Nota para el Aprobador */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
+                  Nota para el Aprobador (Opcional)
+                </label>
+                <textarea
+                  value={approvalData.note}
+                  onChange={(e) => setApprovalData({ ...approvalData, note: e.target.value })}
+                  placeholder="Añade contexto o instrucciones especiales..."
+                  rows={3}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0050cb] outline-none resize-none"
+                />
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowApprovalModal(false);
+                    setApprovalData({ approverId: '', note: '' });
+                  }}
+                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSendForApproval}
+                  disabled={!approvalData.approverId || loading}
+                  className="flex-1 px-4 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

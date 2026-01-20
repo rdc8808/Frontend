@@ -35,6 +35,8 @@ const SocialPlanner = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]); // Posts pendientes de aprobación (para admin)
   const [myPendingApprovals, setMyPendingApprovals] = useState([]); // Mis posts pendientes (para colaborador)
   const [newUserForm, setNewUserForm] = useState({ fullName: '', email: '', password: '', role: 'collaborator' }); // Formulario de nuevo usuario
+  const [selectionMode, setSelectionMode] = useState(false); // Modo de selección para eliminación masiva
+  const [selectedPosts, setSelectedPosts] = useState([]); // Posts seleccionados para eliminar
 
   // Colores de la marca Core Business Corp
   const colors = {
@@ -559,6 +561,74 @@ const SocialPlanner = () => {
     });
   };
 
+  // Eliminar un post individual
+  const handleDeletePost = async (postId, postStatus) => {
+    const statusText = postStatus === 'published' ? 'publicada' : postStatus === 'scheduled' ? 'programada' : 'borrador';
+    if (!confirm(`¿Estás seguro de eliminar esta publicación ${statusText}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la publicación');
+      }
+
+      alert('Publicación eliminada con éxito');
+      loadPosts(currentUser.email);
+    } catch (error) {
+      console.error('Error:', error);
+      alert(`Error al eliminar: ${error.message}`);
+    }
+  };
+
+  // Alternar modo de selección
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    setSelectedPosts([]); // Limpiar selección al cambiar de modo
+  };
+
+  // Seleccionar/deseleccionar un post
+  const togglePostSelection = (postId) => {
+    if (selectedPosts.includes(postId)) {
+      setSelectedPosts(selectedPosts.filter(id => id !== postId));
+    } else {
+      setSelectedPosts([...selectedPosts, postId]);
+    }
+  };
+
+  // Eliminar posts seleccionados
+  const handleDeleteSelected = async () => {
+    if (selectedPosts.length === 0) {
+      alert('No hay publicaciones seleccionadas');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de eliminar ${selectedPosts.length} publicación${selectedPosts.length > 1 ? 'es' : ''}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      // Eliminar todos los posts seleccionados
+      await Promise.all(
+        selectedPosts.map(postId =>
+          fetch(`${API_URL}/api/posts/${postId}`, { method: 'DELETE' })
+        )
+      );
+
+      alert(`${selectedPosts.length} publicación${selectedPosts.length > 1 ? 'es eliminadas' : ' eliminada'} con éxito`);
+      setSelectedPosts([]);
+      setSelectionMode(false);
+      loadPosts(currentUser.email);
+    } catch (error) {
+      console.error('Error:', error);
+      alert(`Error al eliminar publicaciones: ${error.message}`);
+    }
+  };
+
   const connectAccount = (platform) => {
     window.location.href = `${API_URL}/auth/${platform}?userId=${currentUser.email}`;
   };
@@ -940,13 +1010,41 @@ const SocialPlanner = () => {
             {filterView ? (
               <div className="bg-white rounded-lg border shadow-sm">
                 <div className="p-6 border-b flex justify-between items-center">
-                  <h2 className="text-xl font-bold text-[#0f2842]">
-                    {filterView === 'all' && 'Todas las Publicaciones'}
-                    {filterView === 'scheduled' && 'Publicaciones Programadas'}
-                    {filterView === 'published' && 'Publicaciones Realizadas'}
-                    {filterView === 'drafts' && 'Borradores'}
-                  </h2>
-                  <button onClick={() => setFilterView(null)} className="text-gray-400 hover:text-gray-600">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold text-[#0f2842]">
+                      {filterView === 'all' && 'Todas las Publicaciones'}
+                      {filterView === 'scheduled' && 'Publicaciones Programadas'}
+                      {filterView === 'published' && 'Publicaciones Realizadas'}
+                      {filterView === 'drafts' && 'Borradores'}
+                    </h2>
+                    {!selectionMode && filterView !== 'drafts' && (
+                      <button
+                        onClick={toggleSelectionMode}
+                        className="text-sm px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                      >
+                        Seleccionar
+                      </button>
+                    )}
+                    {selectionMode && (
+                      <>
+                        <button
+                          onClick={handleDeleteSelected}
+                          disabled={selectedPosts.length === 0}
+                          className="text-sm px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar ({selectedPosts.length})
+                        </button>
+                        <button
+                          onClick={toggleSelectionMode}
+                          className="text-sm px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <button onClick={() => { setFilterView(null); setSelectionMode(false); setSelectedPosts([]); }} className="text-gray-400 hover:text-gray-600">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -972,30 +1070,66 @@ const SocialPlanner = () => {
                     return (
                       <div className="grid gap-4">
                         {filteredPosts.map(post => (
-                          <div key={post.id} className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer" onClick={() => {
-                            setCurrentPost(post);
-                            setShowComposer(true);
-                          }}>
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex gap-2">
-                                {post.platforms.facebook && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Facebook className="w-4 h-4 text-blue-600" /></div>}
-                                {post.platforms.linkedin && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Linkedin className="w-4 h-4 text-blue-700" /></div>}
+                          <div key={post.id} className={`border rounded-lg p-4 transition-all ${!selectionMode ? 'hover:shadow-md cursor-pointer' : ''}`}>
+                            <div className="flex items-start gap-3">
+                              {/* Checkbox en modo selección */}
+                              {selectionMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPosts.includes(post.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    togglePostSelection(post.id);
+                                  }}
+                                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                              )}
+                              {/* Contenido del post */}
+                              <div className="flex-1" onClick={() => {
+                                if (!selectionMode) {
+                                  setCurrentPost(post);
+                                  setShowComposer(true);
+                                }
+                              }}>
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex gap-2">
+                                    {post.platforms.facebook && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Facebook className="w-4 h-4 text-blue-600" /></div>}
+                                    {post.platforms.linkedin && <div className="w-6 h-6 bg-blue-50 rounded flex items-center justify-center"><Linkedin className="w-4 h-4 text-blue-700" /></div>}
+                                  </div>
+                                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                    post.status === 'published' ? 'bg-green-100 text-green-700' :
+                                    post.status === 'scheduled' ? 'bg-orange-100 text-orange-700' :
+                                    post.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {post.status === 'published' ? 'Publicada' :
+                                     post.status === 'scheduled' ? 'Programada' :
+                                     post.status === 'pending_approval' ? 'Pendiente' :
+                                     'Borrador'}
+                                  </span>
+                                </div>
+                                <p className="text-gray-700 line-clamp-2 mb-2">{post.caption}</p>
+                                {post.scheduleDate && (
+                                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                                    <Clock className="w-4 h-4" />
+                                    <span>{post.scheduleDate} {post.scheduleTime}</span>
+                                  </div>
+                                )}
                               </div>
-                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                                post.status === 'published' ? 'bg-green-100 text-green-700' :
-                                post.status === 'scheduled' ? 'bg-orange-100 text-orange-700' :
-                                'bg-purple-100 text-purple-700'
-                              }`}>
-                                {post.status === 'published' ? 'Publicada' : post.status === 'scheduled' ? 'Programada' : 'Borrador'}
-                              </span>
+                              {/* Botón eliminar individual (solo fuera de modo selección) */}
+                              {!selectionMode && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeletePost(post.id, post.status);
+                                  }}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Eliminar publicación"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
-                            <p className="text-gray-700 line-clamp-2 mb-2">{post.caption}</p>
-                            {post.scheduleDate && (
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Clock className="w-4 h-4" />
-                                <span>{post.scheduleDate} {post.scheduleTime}</span>
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>

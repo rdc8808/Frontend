@@ -634,7 +634,16 @@ const SocialPlanner = () => {
   };
 
   const disconnectAccount = async (platform) => {
-    if (!confirm(`¿Estás seguro de desconectar ${platform === 'facebook' ? 'Facebook' : 'LinkedIn'}?`)) {
+    // Solo admins pueden desconectar
+    if (currentUser.role !== 'admin') {
+      alert('Solo los administradores pueden desconectar cuentas');
+      return;
+    }
+
+    const platformName = platform === 'facebook' ? 'Facebook' : 'LinkedIn';
+
+    // Advertencia: desconectar afecta a todos los usuarios
+    if (!confirm(`¿Estás seguro de desconectar ${platformName}?\n\nEsto desconectará ${platformName} para TODOS los usuarios de la aplicación.`)) {
       return;
     }
 
@@ -648,11 +657,13 @@ const SocialPlanner = () => {
         })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert(`${platform === 'facebook' ? 'Facebook' : 'LinkedIn'} desconectado exitosamente`);
+        alert(`${platformName} desconectado exitosamente para todos los usuarios`);
         checkConnections(currentUser.email);
       } else {
-        alert('Error al desconectar la cuenta');
+        alert(data.error || 'Error al desconectar la cuenta');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1302,20 +1313,24 @@ const SocialPlanner = () => {
                         <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
                           ✓ Conectado
                         </div>
-                        <button
-                          onClick={() => disconnectAccount('facebook')}
-                          className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
-                        >
-                          Desconectar
-                        </button>
+                        {currentUser.role === 'admin' && (
+                          <button
+                            onClick={() => disconnectAccount('facebook')}
+                            className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
+                          >
+                            Desconectar
+                          </button>
+                        )}
                       </>
                     ) : (
-                      <button
-                        onClick={() => connectAccount('facebook')}
-                        className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
-                      >
-                        Conectar Facebook
-                      </button>
+                      currentUser.role === 'admin' && (
+                        <button
+                          onClick={() => connectAccount('facebook')}
+                          className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
+                        >
+                          Conectar Facebook
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
@@ -1337,20 +1352,24 @@ const SocialPlanner = () => {
                         <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
                           ✓ Conectado
                         </div>
-                        <button
-                          onClick={() => disconnectAccount('linkedin')}
-                          className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
-                        >
-                          Desconectar
-                        </button>
+                        {currentUser.role === 'admin' && (
+                          <button
+                            onClick={() => disconnectAccount('linkedin')}
+                            className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-all"
+                          >
+                            Desconectar
+                          </button>
+                        )}
                       </>
                     ) : (
-                      <button
-                        onClick={() => connectAccount('linkedin')}
-                        className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
-                      >
-                        Conectar LinkedIn
-                      </button>
+                      currentUser.role === 'admin' && (
+                        <button
+                          onClick={() => connectAccount('linkedin')}
+                          className="px-6 py-2 rounded-lg font-medium bg-[#0050cb] text-white hover:bg-[#0f2842] transition-all"
+                        >
+                          Conectar LinkedIn
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

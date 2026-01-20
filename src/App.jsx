@@ -55,6 +55,7 @@ const SocialPlanner = () => {
       setIsAuthenticated(true);
       loadPosts(user.email);
       checkConnections(user.email);
+      loadAllUsers(); // Load all users to show author names on posts
 
       // Load pending approvals based on role
       if (user.role === 'admin') {
@@ -671,6 +672,12 @@ const SocialPlanner = () => {
     }
   };
 
+  // Helper function to get user name from email
+  const getUserName = (email) => {
+    const user = allUsers.find(u => u.email === email);
+    return user ? user.fullName : email;
+  };
+
   const stats = {
     total: posts.length,
     scheduled: posts.filter(p => p.status === 'scheduled').length,
@@ -1120,12 +1127,19 @@ const SocialPlanner = () => {
                                   </span>
                                 </div>
                                 <p className="text-gray-700 line-clamp-2 mb-2">{post.caption}</p>
-                                {post.scheduleDate && (
-                                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{post.scheduleDate} {post.scheduleTime}</span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {post.scheduleDate && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                      <Clock className="w-4 h-4" />
+                                      <span>{post.scheduleDate} {post.scheduleTime}</span>
+                                    </div>
+                                  )}
+                                  {post.userId && (
+                                    <div className="text-xs text-gray-500">
+                                      Por: <span className="font-medium text-gray-700">{getUserName(post.userId)}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               {/* Botón eliminar individual (solo fuera de modo selección) */}
                               {!selectionMode && (

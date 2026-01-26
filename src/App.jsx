@@ -1436,7 +1436,6 @@ const SocialPlanner = () => {
                           <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
                             <span className="text-sm">📷 Media adjunto</span>
                           </div>
-                          )
                         ) : (
                           <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
                             <FileText className="w-8 h-8 text-gray-300" />

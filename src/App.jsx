@@ -1385,8 +1385,15 @@ const SocialPlanner = () => {
                   <div className="flex gap-2">
                     {connectedAccounts.linkedin ? (
                       <>
-                        <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
-                          ✓ Conectado
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
+                            ✓ Conectado
+                          </div>
+                          {connectedAccounts.linkedinOrganization && (
+                            <div className="text-xs text-gray-600">
+                              Página: <strong>{connectedAccounts.linkedinOrganization.name}</strong>
+                            </div>
+                          )}
                         </div>
                         {currentUser.role === 'admin' && (
                           <button

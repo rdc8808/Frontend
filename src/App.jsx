@@ -177,6 +177,20 @@ const SocialPlanner = () => {
     }
   };
 
+  // Load media for a specific post
+  const loadPostMedia = async (postId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/media`);
+      if (!response.ok) throw new Error('Error al cargar media');
+
+      const { media } = await response.json();
+      return media;
+    } catch (error) {
+      console.error('Error al cargar media:', error);
+      return null;
+    }
+  };
+
   const loadAllUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/api/users`);
@@ -1216,13 +1230,21 @@ const SocialPlanner = () => {
                       </span>
                     </div>
                     <p className="text-gray-700 mb-4">{post.caption}</p>
-                    {post.media && (
-                      <img src={post.media} alt="Preview" className="w-full h-48 object-cover rounded-lg mb-4" />
+                    {post.hasMedia && (
+                      <div className="w-full h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-400">
+                        <span className="text-sm">📷 Imagen/Video adjunto</span>
+                      </div>
                     )}
                     <div className="flex gap-3 pt-4 border-t">
                       <button
-                        onClick={() => {
-                          setCurrentPost(post);
+                        onClick={async () => {
+                          // Load media if post has it
+                          if (post.hasMedia) {
+                            const media = await loadPostMedia(post.id);
+                            setCurrentPost({ ...post, media });
+                          } else {
+                            setCurrentPost(post);
+                          }
                           setShowComposer(true);
                         }}
                         className="flex-1 px-4 py-2 bg-[#0050cb] text-white rounded-lg hover:bg-[#0f2842] transition-colors font-medium"
@@ -1410,11 +1432,10 @@ const SocialPlanner = () => {
                     <div className="flex gap-6">
                       {/* Preview */}
                       <div className="w-1/3">
-                        {post.media ? (
-                          post.media.startsWith('data:video') ? (
-                            <video src={post.media} controls className="w-full rounded-lg" />
-                          ) : (
-                            <img src={post.media} alt="Post media" className="w-full rounded-lg object-cover" />
+                        {post.hasMedia ? (
+                          <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                            <span className="text-sm">📷 Media adjunto</span>
+                          </div>
                           )
                         ) : (
                           <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">

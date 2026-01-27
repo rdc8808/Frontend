@@ -54,7 +54,7 @@ const SocialPlanner = () => {
       const user = JSON.parse(savedUser);
       setCurrentUser(user);
       setIsAuthenticated(true);
-      loadPosts(user.email);
+      loadPosts(user.email, user.role);
       checkConnections(user.email);
       loadAllUsers(); // Load all users to show author names on posts
 
@@ -136,7 +136,7 @@ const SocialPlanner = () => {
           setCurrentUser(data.user);
           setIsAuthenticated(true);
           localStorage.setItem('currentUser', JSON.stringify(data.user));
-          loadPosts(data.user.email);
+          loadPosts(data.user.email, data.user.role);
           checkConnections(data.user.email);
         } else {
           alert(data.error || 'Credenciales inválidas');
@@ -165,9 +165,14 @@ const SocialPlanner = () => {
     }
   };
 
-  const loadPosts = async (email) => {
+  const loadPosts = async (email, userRole = null) => {
     try {
-      const response = await fetch(`${API_URL}/api/posts?userId=${email}`);
+      // Admins see ALL posts, collaborators see only their own
+      const url = (userRole === 'admin' || currentUser?.role === 'admin')
+        ? `${API_URL}/api/posts`
+        : `${API_URL}/api/posts?userId=${email}`;
+
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Error al cargar posts');
 
       const data = await response.json();
@@ -323,7 +328,7 @@ const SocialPlanner = () => {
         setShowComposer(false);
         setApprovalData({ approverId: '', note: '' });
         resetCurrentPost();
-        loadPosts(currentUser.email);
+        loadPosts(currentUser.email, currentUser.role);
         loadMyPendingApprovals(); // Reload collaborator's pending posts
       } else {
         alert(data.error || 'Error al enviar para aprobación');
@@ -352,7 +357,7 @@ const SocialPlanner = () => {
       if (response.ok) {
         alert('¡Post aprobado y programado!');
         loadPendingApprovals();
-        loadPosts(currentUser.email);
+        loadPosts(currentUser.email, currentUser.role);
       } else {
         alert(data.error || 'Error al aprobar post');
       }
@@ -381,7 +386,7 @@ const SocialPlanner = () => {
       if (response.ok) {
         alert('Post rechazado');
         loadPendingApprovals();
-        loadPosts(currentUser.email);
+        loadPosts(currentUser.email, currentUser.role);
       } else {
         alert(data.error || 'Error al rechazar post');
       }
@@ -478,7 +483,7 @@ const SocialPlanner = () => {
       }
 
       alert('¡Publicado con éxito en tus redes sociales!');
-      loadPosts(currentUser.email);
+      loadPosts(currentUser.email, currentUser.role);
       setShowComposer(false);
       resetCurrentPost();
       setShowActionMenu(false);
@@ -520,7 +525,7 @@ const SocialPlanner = () => {
       }
 
       alert(`¡Publicación programada para ${currentPost.scheduleDate} a las ${currentPost.scheduleTime}!`);
-      loadPosts(currentUser.email);
+      loadPosts(currentUser.email, currentUser.role);
       setShowComposer(false);
       resetCurrentPost();
       setShowActionMenu(false);
@@ -554,7 +559,7 @@ const SocialPlanner = () => {
       }
 
       alert('¡Borrador guardado con éxito!');
-      loadPosts(currentUser.email);
+      loadPosts(currentUser.email, currentUser.role);
       setShowComposer(false);
       resetCurrentPost();
       setShowActionMenu(false);
@@ -595,7 +600,7 @@ const SocialPlanner = () => {
       }
 
       alert('Publicación eliminada con éxito');
-      loadPosts(currentUser.email);
+      loadPosts(currentUser.email, currentUser.role);
     } catch (error) {
       console.error('Error:', error);
       alert(`Error al eliminar: ${error.message}`);
@@ -639,7 +644,7 @@ const SocialPlanner = () => {
       alert(`${selectedPosts.length} publicación${selectedPosts.length > 1 ? 'es eliminadas' : ' eliminada'} con éxito`);
       setSelectedPosts([]);
       setSelectionMode(false);
-      loadPosts(currentUser.email);
+      loadPosts(currentUser.email, currentUser.role);
     } catch (error) {
       console.error('Error:', error);
       alert(`Error al eliminar publicaciones: ${error.message}`);
@@ -1261,7 +1266,7 @@ const SocialPlanner = () => {
                                 method: 'DELETE'
                               });
                               if (response.ok) {
-                                loadPosts(currentUser.email);
+                                loadPosts(currentUser.email, currentUser.role);
                               } else {
                                 alert('Error al eliminar el borrador');
                               }

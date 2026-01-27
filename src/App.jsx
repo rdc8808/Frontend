@@ -12,12 +12,13 @@ const SocialPlanner = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [posts, setPosts] = useState([]);
-  const [connectedAccounts, setConnectedAccounts] = useState({ facebook: false, linkedin: false });
+  const [connectedAccounts, setConnectedAccounts] = useState({ facebook: false, linkedin: false, linkedinOrganizations: [] });
   const [showComposer, setShowComposer] = useState(false);
   const [currentPost, setCurrentPost] = useState({
     caption: '',
     media: null,
     platforms: { facebook: false, linkedin: false },
+    linkedInOrganizationId: null,
     scheduleDate: '',
     scheduleTime: '',
     status: 'draft', // 'draft', 'scheduled', 'published'
@@ -569,6 +570,7 @@ const SocialPlanner = () => {
       caption: '',
       media: null,
       platforms: { facebook: false, linkedin: false },
+      linkedInOrganizationId: null,
       scheduleDate: '',
       scheduleTime: '',
       status: 'draft',
@@ -1389,9 +1391,13 @@ const SocialPlanner = () => {
                           <div className="px-6 py-2 rounded-lg font-medium bg-green-50 text-green-700 border border-green-300">
                             ✓ Conectado
                           </div>
-                          {connectedAccounts.linkedinOrganization && (
+                          {connectedAccounts.linkedinOrganizations.length > 0 && (
                             <div className="text-xs text-gray-600">
-                              Página: <strong>{connectedAccounts.linkedinOrganization.name}</strong>
+                              {connectedAccounts.linkedinOrganizations.length === 1 ? (
+                                <>Página: <strong>{connectedAccounts.linkedinOrganizations[0].name}</strong></>
+                              ) : (
+                                <>{connectedAccounts.linkedinOrganizations.length} páginas conectadas</>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1774,8 +1780,15 @@ const SocialPlanner = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setCurrentPost({...currentPost, platforms: {...currentPost.platforms, linkedin: !currentPost.platforms.linkedin}});
-                          if (!currentPost.platforms.linkedin) setPreviewPlatform('linkedin');
+                          const newLinkedInState = !currentPost.platforms.linkedin;
+                          setCurrentPost({
+                            ...currentPost,
+                            platforms: {...currentPost.platforms, linkedin: newLinkedInState},
+                            linkedInOrganizationId: newLinkedInState && !currentPost.linkedInOrganizationId
+                              ? connectedAccounts.linkedinOrganizations[0]?.id
+                              : currentPost.linkedInOrganizationId
+                          });
+                          if (newLinkedInState) setPreviewPlatform('linkedin');
                         }}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all font-medium ${
                           currentPost.platforms.linkedin
@@ -1787,6 +1800,29 @@ const SocialPlanner = () => {
                         LinkedIn
                       </button>
                     </div>
+
+                    {/* LinkedIn Organization Selector - Only show if multiple orgs */}
+                    {currentPost.platforms.linkedin && connectedAccounts.linkedinOrganizations.length > 1 && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
+                          Página de LinkedIn
+                        </label>
+                        <select
+                          value={currentPost.linkedInOrganizationId || connectedAccounts.linkedinOrganizations[0]?.id || ''}
+                          onChange={(e) => setCurrentPost({
+                            ...currentPost,
+                            linkedInOrganizationId: e.target.value
+                          })}
+                          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0050cb]"
+                        >
+                          {connectedAccounts.linkedinOrganizations.map(org => (
+                            <option key={org.id} value={org.id}>
+                              {org.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Contenido */}

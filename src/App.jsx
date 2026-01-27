@@ -1840,15 +1840,15 @@ const SocialPlanner = () => {
                   {/* Multimedia */}
                   <div>
                     <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Multimedia</label>
-                    {currentPost.media ? (
+                    {(currentPost.media || currentPost.mediaUrl) ? (
                       <div className="relative">
-                        {currentPost.media.startsWith('data:video') ? (
-                          <video src={currentPost.media} controls className="w-full h-64 object-cover rounded-lg" />
+                        {(currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4')) ? (
+                          <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full h-64 object-cover rounded-lg" />
                         ) : (
-                          <img src={currentPost.media} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
+                          <img src={currentPost.media || currentPost.mediaUrl} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
                         )}
                         <button
-                          onClick={() => setCurrentPost({...currentPost, media: null})}
+                          onClick={() => setCurrentPost({...currentPost, media: null, mediaUrl: null})}
                           className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
                         >
                           <X className="w-4 h-4" />
@@ -1936,12 +1936,12 @@ const SocialPlanner = () => {
                         </div>
 
                         {/* Media */}
-                        {currentPost.media && (
+                        {(currentPost.media || currentPost.mediaUrl) && (
                           <div className="relative">
-                            {currentPost.media.startsWith('data:video') ? (
-                              <video src={currentPost.media} controls className="w-full" />
+                            {((currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4'))) ? (
+                              <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full" />
                             ) : (
-                              <img src={currentPost.media} alt="Post media" className="w-full" />
+                              <img src={currentPost.media || currentPost.mediaUrl} alt="Post media" className="w-full" />
                             )}
                           </div>
                         )}
@@ -1992,12 +1992,12 @@ const SocialPlanner = () => {
                         </div>
 
                         {/* Media */}
-                        {currentPost.media && (
+                        {(currentPost.media || currentPost.mediaUrl) && (
                           <div className="relative bg-gray-100">
-                            {currentPost.media.startsWith('data:video') ? (
-                              <video src={currentPost.media} controls className="w-full" />
+                            {((currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4'))) ? (
+                              <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full" />
                             ) : (
-                              <img src={currentPost.media} alt="Post media" className="w-full" />
+                              <img src={currentPost.media || currentPost.mediaUrl} alt="Post media" className="w-full" />
                             )}
                           </div>
                         )}

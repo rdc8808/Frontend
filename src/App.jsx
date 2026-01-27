@@ -1445,9 +1445,13 @@ const SocialPlanner = () => {
                     <div className="flex gap-6">
                       {/* Preview */}
                       <div className="w-1/3">
-                        {post.hasMedia ? (
-                          <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                            <span className="text-sm">📷 Media adjunto</span>
+                        {(post.media || post.mediaUrl) ? (
+                          <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden">
+                            {((post.media || post.mediaUrl).startsWith('data:video') || (post.mediaUrl && post.mediaUrl.includes('.mp4'))) ? (
+                              <video src={post.media || post.mediaUrl} className="w-full h-full object-cover" />
+                            ) : (
+                              <img src={post.media || post.mediaUrl} alt="Preview" className="w-full h-full object-cover" />
+                            )}
                           </div>
                         ) : (
                           <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">

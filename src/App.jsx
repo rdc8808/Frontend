@@ -17,6 +17,7 @@ const SocialPlanner = () => {
   const [currentPost, setCurrentPost] = useState({
     caption: '',
     media: null,
+    mediaItems: [], // New: array of { base64Data, type, fileName, mimeType, fileSize, id }
     platforms: { facebook: false, linkedin: false },
     linkedInOrganizationId: null,
     scheduleDate: '',
@@ -437,22 +438,78 @@ const SocialPlanner = () => {
     }
   };
 
-  const handleMediaUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (200MB max for LinkedIn, Facebook allows more)
-      const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+  const handleMediaUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const maxSize = 50 * 1024 * 1024; // 50MB per file
+    const maxFiles = 10;
+    const currentMediaItems = currentPost.mediaItems || [];
+
+    // Check total files limit
+    if (currentMediaItems.length + files.length > maxFiles) {
+      alert(`Máximo ${maxFiles} archivos permitidos. Ya tienes ${currentMediaItems.length}.`);
+      return;
+    }
+
+    const newMediaItems = [];
+
+    for (const file of files) {
+      // Validate file size
       if (file.size > maxSize) {
-        alert('El archivo es demasiado grande. El tamaño máximo es 200MB.');
-        return;
+        alert(`${file.name} es muy grande. Máximo 50MB por archivo.`);
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCurrentPost({ ...currentPost, media: reader.result });
-      };
-      reader.readAsDataURL(file);
+      // Determine type
+      let type = 'image';
+      if (file.type.startsWith('video/')) type = 'video';
+      if (file.type === 'application/pdf') type = 'pdf';
+
+      // Convert to base64
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      newMediaItems.push({
+        base64Data,
+        type,
+        fileName: file.name,
+        mimeType: file.type,
+        fileSize: file.size,
+        id: `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      });
     }
+
+    // Update state with new media items
+    const updatedMediaItems = [...currentMediaItems, ...newMediaItems];
+
+    // For backwards compatibility, set media to first item
+    const firstMedia = updatedMediaItems.length > 0 ? updatedMediaItems[0].base64Data : null;
+
+    setCurrentPost({
+      ...currentPost,
+      media: firstMedia,
+      mediaItems: updatedMediaItems
+    });
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  // Remove a specific media item
+  const removeMediaItem = (mediaId) => {
+    const updatedMediaItems = currentPost.mediaItems.filter(item => item.id !== mediaId);
+    const firstMedia = updatedMediaItems.length > 0 ? updatedMediaItems[0].base64Data : null;
+
+    setCurrentPost({
+      ...currentPost,
+      media: firstMedia,
+      mediaItems: updatedMediaItems
+    });
   };
 
   const handlePublishNow = async () => {
@@ -462,6 +519,12 @@ const SocialPlanner = () => {
     }
     if (!currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
       alert('Por favor, selecciona al menos una plataforma');
+      return;
+    }
+    // PDF validation: PDFs only work on LinkedIn
+    const hasPdf = (currentPost.mediaItems || []).some(m => m.type === 'pdf');
+    if (hasPdf && currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
+      alert('Los PDFs solo se pueden publicar en LinkedIn. Por favor, selecciona LinkedIn o elimina los PDFs.');
       return;
     }
     setLoading(true);
@@ -505,6 +568,12 @@ const SocialPlanner = () => {
     }
     if (!currentPost.scheduleDate || !currentPost.scheduleTime) {
       alert('Por favor, selecciona fecha y hora para programar');
+      return;
+    }
+    // PDF validation: PDFs only work on LinkedIn
+    const hasPdf = (currentPost.mediaItems || []).some(m => m.type === 'pdf');
+    if (hasPdf && currentPost.platforms.facebook && !currentPost.platforms.linkedin) {
+      alert('Los PDFs solo se pueden publicar en LinkedIn. Por favor, selecciona LinkedIn o elimina los PDFs.');
       return;
     }
     setLoading(true);
@@ -574,6 +643,7 @@ const SocialPlanner = () => {
     setCurrentPost({
       caption: '',
       media: null,
+      mediaItems: [], // Reset media items array
       platforms: { facebook: false, linkedin: false },
       linkedInOrganizationId: null,
       scheduleDate: '',
@@ -1448,11 +1518,46 @@ const SocialPlanner = () => {
                 {pendingApprovals.map(post => (
                   <div key={post.id} className="bg-white rounded-lg p-6 border shadow-sm">
                     <div className="flex gap-6">
-                      {/* Preview */}
+                      {/* Preview - Multi-media support */}
                       <div className="w-1/3">
-                        {(post.media || post.mediaUrl) ? (
-                          <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden">
-                            {((post.media || post.mediaUrl).startsWith('data:video') || (post.mediaUrl && post.mediaUrl.includes('.mp4'))) ? (
+                        {(post.mediaItems || []).length > 0 ? (
+                          <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                            {(post.mediaItems || []).length > 1 ? (
+                              <div className="grid grid-cols-2 gap-0.5 h-full">
+                                {post.mediaItems.slice(0, 4).map((item, idx) => (
+                                  <div key={idx} className="relative">
+                                    {item.type === 'pdf' ? (
+                                      <div className="w-full h-full bg-red-50 flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-red-500" />
+                                      </div>
+                                    ) : item.type === 'video' ? (
+                                      <video src={item.url} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                    {idx === 3 && post.mediaItems.length > 4 && (
+                                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                        <span className="text-white font-bold">+{post.mediaItems.length - 4}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              post.mediaItems[0].type === 'pdf' ? (
+                                <div className="w-full h-full bg-red-50 flex items-center justify-center">
+                                  <FileText className="w-8 h-8 text-red-500" />
+                                </div>
+                              ) : post.mediaItems[0].type === 'video' ? (
+                                <video src={post.mediaItems[0].url} className="w-full h-full object-cover" />
+                              ) : (
+                                <img src={post.mediaItems[0].url} alt="" className="w-full h-full object-cover" />
+                              )
+                            )}
+                          </div>
+                        ) : (post.media || post.mediaUrl) ? (
+                          <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                            {((post.media || post.mediaUrl).startsWith?.('data:video') || (post.mediaUrl && post.mediaUrl.includes('.mp4'))) ? (
                               <video src={post.media || post.mediaUrl} className="w-full h-full object-cover" />
                             ) : (
                               <img src={post.media || post.mediaUrl} alt="Preview" className="w-full h-full object-cover" />
@@ -1846,30 +1951,68 @@ const SocialPlanner = () => {
                     <div className="text-xs text-gray-500 mt-2">{currentPost.caption.length} caracteres</div>
                   </div>
 
-                  {/* Multimedia */}
+                  {/* Multimedia - Multi-file support */}
                   <div>
-                    <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Multimedia</label>
-                    {(currentPost.media || currentPost.mediaUrl) ? (
-                      <div className="relative">
-                        {(currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4')) ? (
-                          <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full h-64 object-cover rounded-lg" />
-                        ) : (
-                          <img src={currentPost.media || currentPost.mediaUrl} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
-                        )}
-                        <button
-                          onClick={() => setCurrentPost({...currentPost, media: null, mediaUrl: null})}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                    <label className="block text-sm font-semibold mb-3 text-[#0f2842]">
+                      Multimedia ({(currentPost.mediaItems || []).length}/10)
+                    </label>
+
+                    {/* Gallery Grid */}
+                    {(currentPost.mediaItems || []).length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        {currentPost.mediaItems.map((item) => (
+                          <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group">
+                            {item.type === 'image' && (
+                              <img src={item.base64Data || item.url} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {item.type === 'video' && (
+                              <video src={item.base64Data || item.url} className="w-full h-full object-cover" />
+                            )}
+                            {item.type === 'pdf' && (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-red-50">
+                                <FileText className="w-8 h-8 text-red-500" />
+                                <span className="text-xs text-gray-600 mt-1 truncate px-2 max-w-full">{item.fileName}</span>
+                              </div>
+                            )}
+                            {/* Delete button */}
+                            <button
+                              onClick={() => removeMediaItem(item.id)}
+                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            {/* PDF warning badge */}
+                            {item.type === 'pdf' && currentPost.platforms.facebook && !currentPost.platforms.linkedin && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-yellow-500 text-white text-xs px-1 py-0.5 text-center">
+                                Solo LinkedIn
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#0050cb] hover:bg-gray-50 transition-all">
-                        <Plus className="w-10 h-10 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-600 font-medium">Añadir imagen o video</span>
-                        <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4, MOV (max. 200MB)</span>
-                        <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} className="hidden" />
+                    )}
+
+                    {/* Upload Button */}
+                    {(currentPost.mediaItems || []).length < 10 && (
+                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-[#0050cb] hover:bg-gray-50 transition-all">
+                        <Plus className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600 font-medium">Añadir imágenes, videos o PDFs</span>
+                        <span className="text-xs text-gray-400 mt-1">PNG, JPG, MP4, PDF (max. 50MB c/u)</span>
+                        <input
+                          type="file"
+                          accept="image/*,video/*,.pdf,application/pdf"
+                          multiple
+                          onChange={handleMediaUpload}
+                          className="hidden"
+                        />
                       </label>
+                    )}
+
+                    {/* PDF Warning */}
+                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && currentPost.platforms.facebook && !currentPost.platforms.linkedin && (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+                        ⚠️ Los PDFs solo se pueden publicar en LinkedIn. Selecciona LinkedIn o elimina los PDFs.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1944,13 +2087,44 @@ const SocialPlanner = () => {
                           </p>
                         </div>
 
-                        {/* Media */}
-                        {(currentPost.media || currentPost.mediaUrl) && (
+                        {/* Media - Multi-image gallery */}
+                        {((currentPost.mediaItems || []).length > 0 || currentPost.media || currentPost.mediaUrl) && (
                           <div className="relative">
-                            {((currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4'))) ? (
-                              <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full" />
+                            {/* Multi-image grid */}
+                            {(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length > 1 ? (
+                              <div className={`grid gap-0.5 ${(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                                {(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').slice(0, 4).map((item, index) => (
+                                  <div key={item.id} className="relative aspect-square">
+                                    {item.type === 'image' && (
+                                      <img src={item.base64Data || item.url} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                    {item.type === 'video' && (
+                                      <video src={item.base64Data || item.url} className="w-full h-full object-cover" />
+                                    )}
+                                    {/* Show +X more overlay */}
+                                    {index === 3 && (currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length > 4 && (
+                                      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                        <span className="text-white text-2xl font-bold">+{(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length - 4}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             ) : (
-                              <img src={currentPost.media || currentPost.mediaUrl} alt="Post media" className="w-full" />
+                              /* Single media - legacy behavior */
+                              (() => {
+                                const singleItem = (currentPost.mediaItems || []).find(m => m.type !== 'pdf');
+                                const mediaSrc = singleItem?.base64Data || singleItem?.url || currentPost.media || currentPost.mediaUrl;
+                                const isVideo = singleItem?.type === 'video' || (mediaSrc && (mediaSrc.startsWith('data:video') || (mediaSrc.includes && mediaSrc.includes('.mp4'))));
+
+                                return mediaSrc ? (
+                                  isVideo ? (
+                                    <video src={mediaSrc} controls className="w-full" />
+                                  ) : (
+                                    <img src={mediaSrc} alt="Post media" className="w-full" />
+                                  )
+                                ) : null;
+                              })()
                             )}
                           </div>
                         )}
@@ -2000,13 +2174,58 @@ const SocialPlanner = () => {
                           </p>
                         </div>
 
-                        {/* Media */}
-                        {(currentPost.media || currentPost.mediaUrl) && (
+                        {/* Media - Multi-image/PDF gallery */}
+                        {((currentPost.mediaItems || []).length > 0 || currentPost.media || currentPost.mediaUrl) && (
                           <div className="relative bg-gray-100">
-                            {((currentPost.media || currentPost.mediaUrl).startsWith('data:video') || (currentPost.mediaUrl && currentPost.mediaUrl.includes('.mp4'))) ? (
-                              <video src={currentPost.media || currentPost.mediaUrl} controls className="w-full" />
+                            {/* PDF Document Preview */}
+                            {(currentPost.mediaItems || []).some(m => m.type === 'pdf') ? (
+                              <div className="p-4 bg-gray-50 border-t border-b">
+                                {(currentPost.mediaItems || []).filter(m => m.type === 'pdf').map(pdf => (
+                                  <div key={pdf.id} className="flex items-center gap-3 bg-white rounded-lg p-3 border">
+                                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                      <FileText className="w-6 h-6 text-red-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium text-gray-900 truncate">{pdf.fileName || 'Documento'}</div>
+                                      <div className="text-xs text-gray-500">PDF Document</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length > 1 ? (
+                              /* Multi-image grid */
+                              <div className={`grid gap-0.5 ${(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                                {(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').slice(0, 4).map((item, index) => (
+                                  <div key={item.id} className="relative aspect-square">
+                                    {item.type === 'image' && (
+                                      <img src={item.base64Data || item.url} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                    {item.type === 'video' && (
+                                      <video src={item.base64Data || item.url} className="w-full h-full object-cover" />
+                                    )}
+                                    {index === 3 && (currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length > 4 && (
+                                      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                        <span className="text-white text-2xl font-bold">+{(currentPost.mediaItems || []).filter(m => m.type !== 'pdf').length - 4}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             ) : (
-                              <img src={currentPost.media || currentPost.mediaUrl} alt="Post media" className="w-full" />
+                              /* Single media - legacy behavior */
+                              (() => {
+                                const singleItem = (currentPost.mediaItems || []).find(m => m.type !== 'pdf');
+                                const mediaSrc = singleItem?.base64Data || singleItem?.url || currentPost.media || currentPost.mediaUrl;
+                                const isVideo = singleItem?.type === 'video' || (mediaSrc && (mediaSrc.startsWith('data:video') || (mediaSrc.includes && mediaSrc.includes('.mp4'))));
+
+                                return mediaSrc ? (
+                                  isVideo ? (
+                                    <video src={mediaSrc} controls className="w-full" />
+                                  ) : (
+                                    <img src={mediaSrc} alt="Post media" className="w-full" />
+                                  )
+                                ) : null;
+                              })()
                             )}
                           </div>
                         )}

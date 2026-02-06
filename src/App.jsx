@@ -23,8 +23,10 @@ const SocialPlanner = () => {
     scheduleDate: '',
     scheduleTime: '',
     status: 'draft', // 'draft', 'scheduled', 'published'
+    pdfTitle: '', // Título personalizado para PDF en LinkedIn
     id: null
   });
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [filterView, setFilterView] = useState(null); // 'all', 'scheduled', 'published', 'drafts'
@@ -649,8 +651,10 @@ const SocialPlanner = () => {
       scheduleDate: '',
       scheduleTime: '',
       status: 'draft',
+      pdfTitle: '', // Reset PDF title
       id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID
     });
+    setShowEmojiPicker(false); // Close emoji picker if open
   };
 
   // Eliminar un post individual
@@ -1207,13 +1211,19 @@ const SocialPlanner = () => {
                                   </div>
                                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                                     post.status === 'published' ? 'bg-green-100 text-green-700' :
-                                    post.status === 'scheduled' ? 'bg-orange-100 text-orange-700' :
+                                    post.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
                                     post.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' :
+                                    post.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                    post.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                    post.approvalStatus === 'approved' ? 'bg-emerald-100 text-emerald-700' :
                                     'bg-purple-100 text-purple-700'
                                   }`}>
-                                    {post.status === 'published' ? 'Publicada' :
-                                     post.status === 'scheduled' ? 'Programada' :
-                                     post.status === 'pending_approval' ? 'Pendiente' :
+                                    {post.status === 'published' ? '✓ Publicada' :
+                                     post.status === 'scheduled' ? '🕐 Programada' :
+                                     post.status === 'pending_approval' ? '⏳ Pendiente' :
+                                     post.status === 'rejected' ? '✗ Rechazada' :
+                                     post.status === 'failed' ? '⚠ Fallida' :
+                                     post.approvalStatus === 'approved' ? '✓ Aprobada' :
                                      'Borrador'}
                                   </span>
                                 </div>
@@ -1942,12 +1952,50 @@ const SocialPlanner = () => {
                   {/* Contenido */}
                   <div>
                     <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Contenido</label>
-                    <textarea
-                      value={currentPost.caption}
-                      onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
-                      placeholder="¿Qué quieres compartir hoy?"
-                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={currentPost.caption}
+                        onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
+                        placeholder="¿Qué quieres compartir hoy?"
+                        className="w-full border border-gray-300 rounded-lg p-4 pb-12 h-40 resize-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
+                      />
+                      {/* Emoji Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="absolute bottom-3 left-3 text-xl hover:scale-110 transition-transform"
+                        title="Agregar emoji"
+                      >
+                        😊
+                      </button>
+                      {/* Emoji Picker */}
+                      {showEmojiPicker && (
+                        <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72">
+                          <div className="text-xs text-gray-500 mb-2 font-medium">Emojis populares</div>
+                          <div className="grid grid-cols-8 gap-1">
+                            {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+                              '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
+                              '🤩', '🥳', '😏', '🤔', '🤗', '🙄', '😬', '🤐',
+                              '👍', '👏', '🙌', '💪', '🎉', '🎊', '🔥', '💯',
+                              '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+                              '⭐', '🌟', '✨', '💫', '🚀', '💡', '📈', '🎯',
+                              '✅', '❌', '⚠️', '💬', '👀', '🤝', '📌', '🏆'].map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentPost({...currentPost, caption: currentPost.caption + emoji});
+                                  setShowEmojiPicker(false);
+                                }}
+                                className="text-xl hover:bg-gray-100 rounded p-1 transition-colors"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500 mt-2">{currentPost.caption.length} caracteres</div>
                   </div>
 
@@ -2012,6 +2060,24 @@ const SocialPlanner = () => {
                     {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && currentPost.platforms.facebook && !currentPost.platforms.linkedin && (
                       <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
                         ⚠️ Los PDFs solo se pueden publicar en LinkedIn. Selecciona LinkedIn o elimina los PDFs.
+                      </div>
+                    )}
+
+                    {/* PDF Title Input - Only show when PDF is uploaded and LinkedIn selected */}
+                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && currentPost.platforms.linkedin && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
+                          Título del documento (LinkedIn)
+                        </label>
+                        <input
+                          type="text"
+                          value={currentPost.pdfTitle || ''}
+                          onChange={(e) => setCurrentPost({...currentPost, pdfTitle: e.target.value})}
+                          placeholder="Ej: Guía de seguridad industrial 2026"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
+                          maxLength={100}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">Este título aparecerá en el documento cuando se publique</div>
                       </div>
                     )}
                   </div>

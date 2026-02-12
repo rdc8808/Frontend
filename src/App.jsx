@@ -1970,8 +1970,8 @@ const SocialPlanner = () => {
                       </button>
                       {/* Emoji Picker */}
                       {showEmojiPicker && (
-                        <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72">
-                          <div className="text-xs text-gray-500 mb-2 font-medium">Emojis populares</div>
+                        <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72 max-h-48 overflow-y-auto">
+                          <div className="text-xs text-gray-500 mb-2 font-medium sticky top-0 bg-white">Emojis populares</div>
                           <div className="grid grid-cols-8 gap-1">
                             {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
                               '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
@@ -1979,7 +1979,9 @@ const SocialPlanner = () => {
                               '👍', '👏', '🙌', '💪', '🎉', '🎊', '🔥', '💯',
                               '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
                               '⭐', '🌟', '✨', '💫', '🚀', '💡', '📈', '🎯',
-                              '✅', '❌', '⚠️', '💬', '👀', '🤝', '📌', '🏆'].map((emoji) => (
+                              '✅', '❌', '⚠️', '💬', '👀', '🤝', '📌', '🏆',
+                              '💼', '📊', '📱', '💻', '🖥️', '📧', '📞', '🔔',
+                              '⏰', '📅', '✍️', '📝', '🗂️', '📁', '🔗', '🔒'].map((emoji) => (
                               <button
                                 key={emoji}
                                 type="button"
@@ -2063,21 +2065,21 @@ const SocialPlanner = () => {
                       </div>
                     )}
 
-                    {/* PDF Title Input - Only show when PDF is uploaded and LinkedIn selected */}
-                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && currentPost.platforms.linkedin && (
-                      <div className="mt-4">
+                    {/* PDF Title Input - Show when PDF is uploaded */}
+                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && (
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
-                          Título del documento (LinkedIn)
+                          📄 Título del documento PDF
                         </label>
                         <input
                           type="text"
                           value={currentPost.pdfTitle || ''}
                           onChange={(e) => setCurrentPost({...currentPost, pdfTitle: e.target.value})}
                           placeholder="Ej: Guía de seguridad industrial 2026"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none bg-white"
                           maxLength={100}
                         />
-                        <div className="text-xs text-gray-500 mt-1">Este título aparecerá en el documento cuando se publique</div>
+                        <div className="text-xs text-gray-500 mt-1">Este título aparecerá en LinkedIn cuando se publique el documento</div>
                       </div>
                     )}
                   </div>

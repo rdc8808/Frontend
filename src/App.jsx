@@ -1953,6 +1953,7 @@ const SocialPlanner = () => {
                   <div>
                     <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Contenido</label>
                     <textarea
+                      id="caption-textarea"
                       value={currentPost.caption}
                       onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
                       placeholder="¿Qué quieres compartir hoy?"
@@ -1963,15 +1964,19 @@ const SocialPlanner = () => {
                         <button
                           type="button"
                           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
-                          title="Agregar emoji"
+                          className={`flex items-center gap-1 text-sm px-2 py-1 rounded transition-colors ${
+                            showEmojiPicker
+                              ? 'bg-[#0050cb] text-white'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                          }`}
+                          title={showEmojiPicker ? "Cerrar emojis" : "Agregar emoji"}
                         >
-                          😊 <span>Emoji</span>
+                          😊 <span>{showEmojiPicker ? 'Cerrar' : 'Emoji'}</span>
                         </button>
                         {/* Emoji Picker */}
                         {showEmojiPicker && (
                           <div className="absolute bottom-10 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72 max-h-52 overflow-y-auto">
-                            <div className="text-xs text-gray-500 mb-2 font-medium sticky top-0 bg-white pb-1">Emojis populares</div>
+                            <div className="text-xs text-gray-500 mb-2 font-medium sticky top-0 bg-white pb-1">Click para insertar en el texto</div>
                             <div className="grid grid-cols-8 gap-1">
                               {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
                                 '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
@@ -1986,8 +1991,16 @@ const SocialPlanner = () => {
                                   key={emoji}
                                   type="button"
                                   onClick={() => {
-                                    setCurrentPost({...currentPost, caption: currentPost.caption + emoji});
-                                    setShowEmojiPicker(false);
+                                    const textarea = document.getElementById('caption-textarea');
+                                    const start = textarea?.selectionStart || currentPost.caption.length;
+                                    const end = textarea?.selectionEnd || currentPost.caption.length;
+                                    const newCaption = currentPost.caption.slice(0, start) + emoji + currentPost.caption.slice(end);
+                                    setCurrentPost({...currentPost, caption: newCaption});
+                                    // Restore focus and cursor position after emoji insert
+                                    setTimeout(() => {
+                                      textarea?.focus();
+                                      textarea?.setSelectionRange(start + emoji.length, start + emoji.length);
+                                    }, 0);
                                   }}
                                   className="text-xl hover:bg-gray-100 rounded p-1 transition-colors"
                                 >

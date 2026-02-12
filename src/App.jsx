@@ -2042,6 +2042,23 @@ const SocialPlanner = () => {
                       </div>
                     )}
 
+                    {/* PDF Title Input - Show right after PDF upload */}
+                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
+                          📄 Título del documento
+                        </label>
+                        <input
+                          type="text"
+                          value={currentPost.pdfTitle || ''}
+                          onChange={(e) => setCurrentPost({...currentPost, pdfTitle: e.target.value})}
+                          placeholder="Escribe el título que aparecerá en LinkedIn"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none bg-white text-sm"
+                          maxLength={100}
+                        />
+                      </div>
+                    )}
+
                     {/* Upload Button */}
                     {(currentPost.mediaItems || []).length < 10 && (
                       <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-[#0050cb] hover:bg-gray-50 transition-all">
@@ -2065,23 +2082,6 @@ const SocialPlanner = () => {
                       </div>
                     )}
 
-                    {/* PDF Title Input - Show when PDF is uploaded */}
-                    {(currentPost.mediaItems || []).some(m => m.type === 'pdf') && (
-                      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <label className="block text-sm font-semibold mb-2 text-[#0f2842]">
-                          📄 Título del documento PDF
-                        </label>
-                        <input
-                          type="text"
-                          value={currentPost.pdfTitle || ''}
-                          onChange={(e) => setCurrentPost({...currentPost, pdfTitle: e.target.value})}
-                          placeholder="Ej: Guía de seguridad industrial 2026"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none bg-white"
-                          maxLength={100}
-                        />
-                        <div className="text-xs text-gray-500 mt-1">Este título aparecerá en LinkedIn cuando se publique el documento</div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -2254,7 +2254,7 @@ const SocialPlanner = () => {
                                       <FileText className="w-6 h-6 text-red-600" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-medium text-gray-900 truncate">{pdf.fileName || 'Documento'}</div>
+                                      <div className="text-sm font-medium text-gray-900 truncate">{currentPost.pdfTitle || pdf.fileName || 'Documento'}</div>
                                       <div className="text-xs text-gray-500">PDF Document</div>
                                     </div>
                                   </div>

@@ -1952,53 +1952,54 @@ const SocialPlanner = () => {
                   {/* Contenido */}
                   <div>
                     <label className="block text-sm font-semibold mb-3 text-[#0f2842]">Contenido</label>
-                    <div className="relative">
-                      <textarea
-                        value={currentPost.caption}
-                        onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
-                        placeholder="¿Qué quieres compartir hoy?"
-                        className="w-full border border-gray-300 rounded-lg p-4 pb-12 h-40 resize-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
-                      />
-                      {/* Emoji Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className="absolute bottom-3 left-3 text-xl hover:scale-110 transition-transform"
-                        title="Agregar emoji"
-                      >
-                        😊
-                      </button>
-                      {/* Emoji Picker */}
-                      {showEmojiPicker && (
-                        <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72 max-h-48 overflow-y-auto">
-                          <div className="text-xs text-gray-500 mb-2 font-medium sticky top-0 bg-white">Emojis populares</div>
-                          <div className="grid grid-cols-8 gap-1">
-                            {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
-                              '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
-                              '🤩', '🥳', '😏', '🤔', '🤗', '🙄', '😬', '🤐',
-                              '👍', '👏', '🙌', '💪', '🎉', '🎊', '🔥', '💯',
-                              '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
-                              '⭐', '🌟', '✨', '💫', '🚀', '💡', '📈', '🎯',
-                              '✅', '❌', '⚠️', '💬', '👀', '🤝', '📌', '🏆',
-                              '💼', '📊', '📱', '💻', '🖥️', '📧', '📞', '🔔',
-                              '⏰', '📅', '✍️', '📝', '🗂️', '📁', '🔗', '🔒'].map((emoji) => (
-                              <button
-                                key={emoji}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentPost({...currentPost, caption: currentPost.caption + emoji});
-                                  setShowEmojiPicker(false);
-                                }}
-                                className="text-xl hover:bg-gray-100 rounded p-1 transition-colors"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
+                    <textarea
+                      value={currentPost.caption}
+                      onChange={(e) => setCurrentPost({...currentPost, caption: e.target.value})}
+                      placeholder="¿Qué quieres compartir hoy?"
+                      className="w-full border border-gray-300 rounded-lg p-4 h-40 resize-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent outline-none"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                          title="Agregar emoji"
+                        >
+                          😊 <span>Emoji</span>
+                        </button>
+                        {/* Emoji Picker */}
+                        {showEmojiPicker && (
+                          <div className="absolute bottom-10 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 w-72 max-h-52 overflow-y-auto">
+                            <div className="text-xs text-gray-500 mb-2 font-medium sticky top-0 bg-white pb-1">Emojis populares</div>
+                            <div className="grid grid-cols-8 gap-1">
+                              {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+                                '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
+                                '🤩', '🥳', '😏', '🤔', '🤗', '🙄', '😬', '🤐',
+                                '👍', '👏', '🙌', '💪', '🎉', '🎊', '🔥', '💯',
+                                '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+                                '⭐', '🌟', '✨', '💫', '🚀', '💡', '📈', '🎯',
+                                '✅', '❌', '⚠️', '💬', '👀', '🤝', '📌', '🏆',
+                                '💼', '📊', '📱', '💻', '🖥️', '📧', '📞', '🔔',
+                                '⏰', '📅', '✍️', '📝', '🗂️', '📁', '🔗', '🔒'].map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentPost({...currentPost, caption: currentPost.caption + emoji});
+                                    setShowEmojiPicker(false);
+                                  }}
+                                  className="text-xl hover:bg-gray-100 rounded p-1 transition-colors"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">{currentPost.caption.length} caracteres</div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-2">{currentPost.caption.length} caracteres</div>
                   </div>
 
                   {/* Multimedia - Multi-file support */}

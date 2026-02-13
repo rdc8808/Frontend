@@ -1534,36 +1534,44 @@ const SocialPlanner = () => {
                           <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                             {(post.mediaItems || []).length > 1 ? (
                               <div className="grid grid-cols-2 gap-0.5 h-full">
-                                {post.mediaItems.slice(0, 4).map((item, idx) => (
-                                  <div key={idx} className="relative">
-                                    {item.type === 'pdf' ? (
-                                      <div className="w-full h-full bg-red-50 flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-red-500" />
-                                      </div>
-                                    ) : item.type === 'video' ? (
-                                      <video src={item.url} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <img src={item.url} alt="" className="w-full h-full object-cover" />
-                                    )}
-                                    {idx === 3 && post.mediaItems.length > 4 && (
-                                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                        <span className="text-white font-bold">+{post.mediaItems.length - 4}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
+                                {post.mediaItems.slice(0, 4).map((item, idx) => {
+                                  const isPdf = item.type === 'pdf' || item.mimeType === 'application/pdf' || item.url?.includes('.pdf');
+                                  const isVideo = item.type === 'video' || item.mimeType?.startsWith('video/');
+                                  return (
+                                    <div key={idx} className="relative">
+                                      {isPdf ? (
+                                        <div className="w-full h-full bg-red-50 flex items-center justify-center">
+                                          <FileText className="w-6 h-6 text-red-500" />
+                                        </div>
+                                      ) : isVideo ? (
+                                        <video src={item.url} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                      )}
+                                      {idx === 3 && post.mediaItems.length > 4 && (
+                                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                          <span className="text-white font-bold">+{post.mediaItems.length - 4}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            ) : (
-                              post.mediaItems[0].type === 'pdf' ? (
-                                <div className="w-full h-full bg-red-50 flex items-center justify-center">
+                            ) : (() => {
+                              const item = post.mediaItems[0];
+                              const isPdf = item.type === 'pdf' || item.mimeType === 'application/pdf' || item.url?.includes('.pdf');
+                              const isVideo = item.type === 'video' || item.mimeType?.startsWith('video/');
+                              return isPdf ? (
+                                <div className="w-full h-full bg-red-50 flex flex-col items-center justify-center">
                                   <FileText className="w-8 h-8 text-red-500" />
+                                  <span className="text-xs text-red-600 mt-1">PDF</span>
                                 </div>
-                              ) : post.mediaItems[0].type === 'video' ? (
-                                <video src={post.mediaItems[0].url} className="w-full h-full object-cover" />
+                              ) : isVideo ? (
+                                <video src={item.url} className="w-full h-full object-cover" />
                               ) : (
-                                <img src={post.mediaItems[0].url} alt="" className="w-full h-full object-cover" />
-                              )
-                            )}
+                                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                              );
+                            })()}
                           </div>
                         ) : (post.media || post.mediaUrl) ? (
                           <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">

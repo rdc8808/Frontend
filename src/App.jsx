@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save, CheckCircle, Trash2 } from 'lucide-react';
+import { Calendar, Facebook, Linkedin, Send, Plus, Settings, LogOut, BarChart3, Clock, X, ChevronLeft, ChevronRight, FileText, Save, CheckCircle, Trash2, Download } from 'lucide-react';
 import RubiconLogo from './assets/Rubicon-Core-Icon.png';
 import CBCLogo from './assets/logocbc.png';
 
@@ -1536,7 +1536,7 @@ const SocialPlanner = () => {
                       {/* Preview - Multi-media support */}
                       <div className="w-1/3">
                         {(post.mediaItems || []).length > 0 ? (
-                          <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                          <div className={`w-full bg-gray-100 rounded-lg overflow-hidden ${(post.mediaItems || []).some(m => m.type === 'pdf' || m.mimeType === 'application/pdf' || m.url?.includes('.pdf')) ? 'h-40' : 'h-32'}`}>
                             {(post.mediaItems || []).length > 1 ? (
                               <div className="grid grid-cols-2 gap-0.5 h-full">
                                 {post.mediaItems.slice(0, 4).map((item, idx) => {
@@ -1567,9 +1567,22 @@ const SocialPlanner = () => {
                               const isPdf = item.type === 'pdf' || item.mimeType === 'application/pdf' || item.url?.includes('.pdf');
                               const isVideo = item.type === 'video' || item.mimeType?.startsWith('video/');
                               return isPdf ? (
-                                <div className="w-full h-full bg-red-50 flex flex-col items-center justify-center">
+                                <div className="w-full h-full bg-red-50 flex flex-col items-center justify-center p-2">
                                   <FileText className="w-8 h-8 text-red-500" />
-                                  <span className="text-xs text-red-600 mt-1">PDF</span>
+                                  <span className="text-xs text-red-600 mt-1 text-center line-clamp-2 px-1">
+                                    {post.pdfTitle || item.fileName || 'PDF'}
+                                  </span>
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download={post.pdfTitle || item.fileName || 'documento.pdf'}
+                                    className="mt-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    Descargar
+                                  </a>
                                 </div>
                               ) : isVideo ? (
                                 <video src={item.url} className="w-full h-full object-cover" />

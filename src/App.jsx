@@ -357,8 +357,13 @@ const SocialPlanner = () => {
 
       const data = await response.json();
 
-      if (response.ok) {
-        alert('¡Post aprobado y programado!');
+      if (response.ok || data.success) {
+        // Check if it was published immediately vs just scheduled
+        if (data.publishedImmediately) {
+          alert('¡Post aprobado y publicado inmediatamente!');
+        } else {
+          alert('¡Post aprobado y programado!');
+        }
         loadPendingApprovals();
         loadPosts(currentUser.email, currentUser.role);
       } else {

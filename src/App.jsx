@@ -2492,7 +2492,7 @@ const SocialPlanner = () => {
                   type="date"
                   value={currentPost.scheduleDate}
                   onChange={(e) => setCurrentPost({...currentPost, scheduleDate: e.target.value})}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0050cb] focus:border-transparent"
                 />
               </div>

@@ -2037,34 +2037,8 @@ const SocialPlanner = () => {
                           </div>
                         )}
                       </div>
-                      {(() => {
-                        const hasPdfLinkedIn = (currentPost.mediaItems || []).some(item => item.type === 'pdf') && currentPost.platforms?.linkedin;
-                        const charCount = currentPost.caption.length;
-                        const colorClass = hasPdfLinkedIn
-                          ? (charCount > 300 ? 'text-red-600 font-semibold' : charCount > 260 ? 'text-orange-500 font-medium' : 'text-gray-500')
-                          : 'text-gray-500';
-                        return (
-                          <div className={`text-xs ${colorClass}`}>
-                            {hasPdfLinkedIn ? `${charCount}/300 caracteres (LinkedIn PDF)` : `${charCount} caracteres`}
-                          </div>
-                        );
-                      })()}
+                      <div className="text-xs text-gray-500">{currentPost.caption.length} caracteres</div>
                     </div>
-                    {/* LinkedIn PDF character limit warning */}
-                    {(currentPost.mediaItems || []).some(item => item.type === 'pdf') && currentPost.platforms?.linkedin && (
-                      <div className={`mt-2 text-xs rounded-lg px-3 py-2 flex items-start gap-2 ${
-                        currentPost.caption.length > 300
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        <span className="shrink-0">⚠️</span>
-                        <span>
-                          {currentPost.caption.length > 300
-                            ? `El texto supera los 300 caracteres. LinkedIn truncará el contenido en posts con PDF (actualmente ${currentPost.caption.length} caracteres).`
-                            : 'LinkedIn limita el texto a ~300 caracteres en posts con PDF. Mantén tu mensaje breve.'}
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Multimedia - Multi-file support */}
